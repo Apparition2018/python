@@ -6,20 +6,41 @@
 - JavaScript  弱类型动态语言
 """
 import copy
+from functools import reduce
 
 
 # region 内置函数：https://docs.python.org/zh-cn/3/library/functions.html
 class TestBuiltinFunctions:
-    """
-    ``_
-    """
-
     def test_print(self):
-        print("广州", "深圳", "中山", sep=" ", end="\n")
+        print('广州', '深圳', '中山', sep=' ', end='\n')
 
     def test_id(self):
-        """id()：返回对象内存地址"""
+        """ id()：返回对象内存地址 """
         id(1)
+
+    def test_range_sum(self):
+        result = 0
+        r = range(1, 101, 1)
+        for i in r:
+            result += i
+        assert result == sum(r)
+
+    def test_eval_exec(self):
+        """
+        eval() 对比 exec()
+
+        - 功能：计算表达式的值；执行任意代码块
+        - 返回值：返回表达式结果；总是返回 None
+        - 语法支持：仅表达式（无复制、循环等）；完整 Python 语法
+        """
+        assert type(eval('[1, 2, 3]')) == list
+        pass
+
+    def test_type_conversion(self):
+        """ 类型转换：int(), float(), chr(), str(), tuple(), list(), set() """
+        assert int(1.8) == 1
+        assert list('hello') == ['h', 'e', 'l', 'l', 'o']
+        assert list({'name': 'ljh', 'age': 18}) == ['name', 'age']
 
     def test_iter_next(self):
         """
@@ -30,35 +51,29 @@ class TestBuiltinFunctions:
         assert next(iterator) == 1
         assert next(iterator) == 2
 
-    def test_range_sum(self):
-        result = 0
-        r = range(1, 101, 1)
-        for i in r:
-            result += i
-        assert result == sum(r)
-
-    def test_type_conversion(self):
-        """类型转换：int(), float(), chr(), str(), tuple(), list(), eval()"""
-        assert int(1.8) == 1
-        assert list('hello') == ['h', 'e', 'l', 'l', 'o']
-        assert list({'name': 'ljh', 'age': 18}) == ['name', 'age']
-        assert eval('1+1') == 2
-        assert type(eval('[1, 2, 3]')) == list
-
-    def test_eval_exec(self):
+    def test_enumerate_zip(self):
         """
-        eval() 对比 exec()
-
-        - 功能：计算表达式的值；执行任意代码块
-        - 返回值：返回表达式结果；总是返回 None
-        - 语法支持：仅表达式（无复制、循环等）；完整 Python 语法
+        - enumerate()：返回一个枚举对象
+        - zip()：在多个迭代器上并行迭代，从每个迭代器返回一个数据项组成元组
         """
-        pass
+        indexes = [1, 2, 3]
+        letters = ['a', 'b', 'c', 'd']
+        seasons = ['Spring', 'Summer', 'Fall', 'Winter']
+        zip_len = None
+        for i, item in enumerate(zip(indexes, letters, seasons)):
+            assert item == (indexes[i], letters[i], seasons[i])
+            zip_len = i + 1
+        # 如果迭代器长度不一样，zip() 按照最短的返回
+        assert zip_len == min(len(indexes), len(letters), len(seasons))
+
+    def test_map(self):
+        """ map(): 返回一个迭代器，该迭代器将函数应用于可迭代对象的每个项，从而产生结果 """
+        assert list(map(lambda x: x * 2, [1, 2, 3])) == [2, 4, 6]
 
 
 # endregion
 # region 内置类型：https://docs.python.org/zh-cn/3/library/stdtypes.html
-def test_builtin_types():
+class TestBuiltinTypes:
     """
     1. 不可变类型：修改操作实际创建新对象，内存地址改变，可用作字典键
         1. 数值：int, flot, complex, bool
@@ -73,144 +88,159 @@ def test_builtin_types():
         3. 映射：dict
         4. 集合：set
     """
-    # bool 是 int 子类，False 和 True 的行为分别与整数 0 和 1 类似，但是不建议这样使用
-    assert True + False == 1
-    # 字符串方法
-    # find() 未找到到返回 -1，index() 未找到引发 ValueError
-    assert "watermelon".find("melon") == "watermelon".index("melon")
-    assert "banana".count("a") == 3
-    assert "blood".replace("o", "e") == "bleed"
-    # encode(), decode()
-    h_encode = "hello".encode("utf8")
-    assert h_encode == b'hello'
-    assert h_encode.decode("utf8") == "hello"
 
+    def test_builtin_types(self):
+        # bool 是 int 子类，False 和 True 的行为分别与整数 0 和 1 类似，但是不建议这样使用
+        assert True + False == 1
+        # 字符串方法
+        # find() 未找到到返回 -1，index() 未找到引发 ValueError
+        assert 'watermelon'.find('melon') == 'watermelon'.index('melon')
+        assert 'banana'.count('a') == 3
+        assert 'blood'.replace('o', 'e') == 'bleed'
+        # encode(), decode()
+        h_encode = 'hello'.encode('utf8')
+        assert h_encode == b'hello'
+        assert h_encode.decode('utf8') == 'hello'
 
-# endregion
-# region 内置类型-序列类型：https://docs.python.org/zh-cn/3/library/stdtypes.html#sequence-types-list-tuple-range
-# 元组和序列：https://docs.python.org/zh-cn/3/tutorial/datastructures.html#tuples-and-sequences
-def test_sequence_types():
-    """
-    核心特征：
-        1. 有序性
-        2. 索引访问
-        3. 切片操作
-        4. 可迭代：for
-        5. 长度计算：len(seq)
-
-    `按可变性分类 <https://docs.python.org/zh-cn/3.15/reference/datamodel.html#sequences>`_：
-        1. 不可变序列：str tuple range bytes
-        2. 可变序列：list bytearray
-    """
-    # 索引访问
-    assert "hello"[-1] == "o"
-    assert "water" in "watermelon"
-    assert "fire" not in "watermelon"
-    assert "a" * 3 == "aaa"
-    # 切片
-    assert "watermelon"[0:5] == "water"
-    assert "watermelon"[-5:] == "melon"
-    assert "watermelon"[-1:-3:-1] == "no"
-    assert len("hello") == 5
-    assert min("hello") == "e"
-    assert max("hello") == "o"
-    assert "hello".count("l") == 2
-    # 添加、扩展、插入
-    seq = ['a', 'b', 'c']
-    seq.append('d')
-    assert seq == ['a', 'b', 'c', 'd']
-    seq.extend('eg')
-    assert seq == ['a', 'b', 'c', 'd', 'e', 'g']
-    seq.insert(5, 'f')
-    assert seq == ['a', 'b', 'c', 'd', 'e', 'f', 'g']
-    seq.pop()
-    seq.pop(len(seq) - 1)
-    assert seq == ['a', 'b', 'c', 'd', 'e']
-    seq.remove('e')
-    assert seq == ['a', 'b', 'c', 'd']
-    # 列表推导式
-    assert [global_x * 2 for global_x in range(1, 10) if global_x <= 3] == [2, 4, 6]
-    # 元组只有一个元素时，type()返回元素的类型，而不是元组类型
-    assert type((1)) == int
-    assert type((1,)) == tuple
-
-
-# endregion
-# region 内置类型-集合类型：https://docs.python.org/zh-cn/3/library/stdtypes.html#set-types-set-frozenset
-def test_set_types():
-    """
-    不同可哈希对象的无序集合
-
-    两种内置 Set：
-        1. set：可变的，所以没有哈希值；不能被用作字典的键或其他 set 的元素
-        2. frozenset：不可变且可哈希；可以被用作字典的键或其他 set 的元素
+    def test_sequence_types(self):
         """
-    # 空 Set
-    s = set()
-    s.add('a')
-    # 更新集合，添加来自 others 中的所有元素
-    s.update(['b', 'c', 'd', 'e'])
-    s.remove('e')
-    assert s == {'d', 'c', 'b', 'a'}
-    # 存在则移除
-    s.discard('f')
-    assert s == {'d', 'c', 'b', 'a'}
-    # 移除并返回左一元素
-    # 由于 int 哈希值等于其本身，所以此 set ‘实现了有序’，左一元素永远是1
-    assert {1, 2, 3}.pop() == 1
-    # 交集
-    assert {1, 2} & {3, 4} == set()
-    assert {1, 2}.intersection({3, 4}) == set()
-    # 并集
-    assert {1, 2} | {2, 3} == {1, 2, 3}
-    assert {1, 2}.union({2, 3}) == {1, 2, 3}
-    # 差集
-    assert {1, 2} - {2, 3} == {1}
-    assert {1, 2}.difference({2, 3}) == {1}
-    # 对称差集
-    assert {1, 2} ^ {2, 3} == {1, 3}
-    assert {1, 2}.symmetric_difference({2, 3}) == {1, 3}
-    # 交集是否为 null
-    assert {1, 2}.isdisjoint({3, 4})
-    # 是否为子集
-    assert {1, 2}.issubset({1, 2, 3})
-    # 是否为超集
-    assert {1, 2, 3}.issuperset({1, 2})
+        `序列类型 <https://docs.python.org/zh-cn/3/library/stdtypes.html#sequence-types-list-tuple-range>`_
+
+        `元组和序列 <https://docs.python.org/zh-cn/3/tutorial/datastructures.html#tuples-and-sequences>`_
+
+        核心特征：
+            1. 有序性
+            2. 索引访问
+            3. 切片操作
+            4. 可迭代：for
+            5. 长度计算：len(seq)
+
+        `按可变性分类 <https://docs.python.org/zh-cn/3.15/reference/datamodel.html#sequences>`_：
+            1. 不可变序列：str tuple range bytes
+            2. 可变序列：list bytearray
+        """
+        # 索引访问
+        assert 'hello'[-1] == 'o'
+        assert 'water' in 'watermelon'
+        assert 'fire' not in 'watermelon'
+        assert 'a' * 3 == 'aaa'
+        # 切片
+        assert 'watermelon'[0:5] == 'water'
+        assert 'watermelon'[-5:] == 'melon'
+        assert 'watermelon'[-1:-3:-1] == 'no'
+        assert len('hello') == 5
+        assert min('hello') == 'e'
+        assert max('hello') == 'o'
+        assert 'hello'.count('l') == 2
+        # 添加、扩展、插入
+        seq = ['a', 'b', 'c']
+        seq.append('d')
+        assert seq == ['a', 'b', 'c', 'd']
+        seq.extend('eg')
+        assert seq == ['a', 'b', 'c', 'd', 'e', 'g']
+        seq.insert(5, 'f')
+        assert seq == ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+        seq.pop()
+        seq.pop(len(seq) - 1)
+        assert seq == ['a', 'b', 'c', 'd', 'e']
+        seq.remove('e')
+        assert seq == ['a', 'b', 'c', 'd']
+        # 列表推导式
+        assert [x * 2 for x in range(1, 10) if x <= 3] == [2, 4, 6]
+        # 元组只有一个元素时，type()返回元素的类型，而不是元组类型
+        assert type((1)) == int
+        assert type((1,)) == tuple
+
+    def test_set_types(self):
+        """
+        `集合类型 <https://docs.python.org/zh-cn/3/library/stdtypes.html#set-types-set-frozenset>`_
+
+        不同可哈希对象的无序集合
+
+        两种内置 Set：
+            1. set：可变的，所以没有哈希值；不能被用作字典的键或其他 set 的元素
+            2. frozenset：不可变且可哈希；可以被用作字典的键或其他 set 的元素
+        """
+        # 空 Set
+        s = set()
+        s.add('a')
+        # 更新集合，添加来自 others 中的所有元素
+        s.update(['b', 'c', 'd', 'e'])
+        s.remove('e')
+        assert s == {'d', 'c', 'b', 'a'}
+        # 存在则移除
+        s.discard('f')
+        assert s == {'d', 'c', 'b', 'a'}
+        # 移除并返回左一元素
+        # 由于 int 哈希值等于其本身，所以此 set ‘实现了有序’，左一元素永远是1
+        assert {1, 2, 3}.pop() == 1
+        # 交集
+        assert {1, 2} & {3, 4} == set()
+        assert {1, 2}.intersection({3, 4}) == set()
+        # 并集
+        assert {1, 2} | {2, 3} == {1, 2, 3}
+        assert {1, 2}.union({2, 3}) == {1, 2, 3}
+        # 差集
+        assert {1, 2} - {2, 3} == {1}
+        assert {1, 2}.difference({2, 3}) == {1}
+        # 对称差集
+        assert {1, 2} ^ {2, 3} == {1, 3}
+        assert {1, 2}.symmetric_difference({2, 3}) == {1, 3}
+        # 交集是否为 null
+        assert {1, 2}.isdisjoint({3, 4})
+        # 是否为子集
+        assert {1, 2}.issubset({1, 2, 3})
+        # 是否为超集
+        assert {1, 2, 3}.issuperset({1, 2})
+
+    def test_mapping_types(self):
+        """
+        `映射类型 <https://docs.python.org/zh-cn/3/library/stdtypes.html#mapping-types-dict>`_
+        """
+        d = {'name': 'ljh', 'age': 18}
+        assert type(d) == dict
+        assert len(d) == 2
+        # keys()、values()、items() 返回的对象是试图对象
+        assert type(d.keys()).__name__ == 'dict_keys'
+        assert type(d.values()).__name__ == 'dict_values'
+        assert type(d.items()).__name__ == 'dict_items'
+        d.pop('age')
+        d['age'] = 123
+        assert d.popitem() == ('age', 123)
+        d.clear()
+        assert d == {}
+        # 字典推导式
+        assert {x: x ** 2 for x in range(1, 10) if x <= 3} == {1: 1, 2: 4, 3: 9}
 
 
 # endregion
-# region 内置类型-映射类型：https://docs.python.org/zh-cn/3/library/stdtypes.html#mapping-types-dict
-def test_mapping_types():
-    d = {'name': 'ljh', 'age': 18}
-    assert type(d) == dict
-    assert len(d) == 2
-    # keys()、values()、items() 返回的对象是试图对象
-    assert type(d.keys()).__name__ == 'dict_keys'
-    assert type(d.values()).__name__ == 'dict_values'
-    assert type(d.items()).__name__ == 'dict_items'
-    d.pop('age')
-    d['age'] = 123
-    assert d.popitem() == ('age', 123)
-    d.clear()
-    assert d == {}
-    # 字典推导式
-    assert {global_x: global_x ** 2 for global_x in range(1, 10) if global_x <= 3} == {1: 1, 2: 4, 3: 9}
+# region 数据类型：https://docs.python.org/zh-cn/3/library/datatypes.html
+class TestDataTypes:
+    def test_copy(self):
+        """
+        `copy <https://docs.python.org/zh-cn/3/library/copy.html>`_
+        """
+        c = [1, 2, [3, 4]]
+        c2 = c
+        assert id(c) == id(c2)
+        # 浅拷贝
+        c3 = copy.copy(c)
+        assert id(c) != id(c3)
+        assert id(c[2]) == id(c3[2])
+        # 深拷贝
+        c4 = copy.deepcopy(c)
+        assert id(c) != id(c4)
+        assert id(c[2]) != id(c4[2])
 
 
 # endregion
-# region 数据类型-copy：https://docs.python.org/zh-cn/3/library/copy.html
-def test_copy():
-    c = [1, 2, [3, 4]]
-    c2 = c
-    assert id(c) == id(c2)
-    # 浅拷贝
-    c3 = copy.copy(c)
-    assert id(c) != id(c3)
-    assert id(c[2]) == id(c3[2])
-    # 深拷贝
-    c4 = copy.deepcopy(c)
-    assert id(c) != id(c4)
-    assert id(c[2]) != id(c4[2])
+# region 函数式编程：https://docs.python.org/zh-cn/3/library/functional.html
+class TestFunctional:
+    def test_functools(self):
+        """
+        `functools <https://docs.python.org/zh-cn/3/library/functools.html>`_
+        """
+        assert reduce(lambda a, b: a + b, [1, 2, 3]) == 6
 
 
 # endregion
@@ -225,6 +255,8 @@ def test_expressions():
     assert type(7.0 // 2) == float
     # 幂运算
     assert 2 ** 3 == 8
+    # 条件表达式/三目运算
+    print(1 if True else 0)
 
 
 # endregion 运算
@@ -233,10 +265,17 @@ global_x, global_y, global_z = (0, 0, 0)
 
 
 class TestSimpleStatements:
+    def test_assignment_statements(self):
+        # 解包与“加星”目标
+        first, *middle, last = [1, 2, 3, 4, 5]
+        assert first == 1
+        assert middle == [2, 3, 4]
+        assert last == 5
+
     def test_del_statement(self):
         """
         del 语句
-    
+
         1. 与赋值相似，时递归定义的
         2. 删除列表会从左到右删除每个目标
         3. 属性引用、抽取和切片的删除会被传递给相应的原型对象
@@ -262,13 +301,13 @@ class TestSimpleStatements:
         def number_generator(n):
             for i in range(1, n):
                 yield i + 1
-            return f"生成第 {n} 个数字"
+            return f'生成第 {n} 个数字'
 
         gen = number_generator(3)
         try:
             while True: next(gen)
         except StopIteration as e:
-            print(f"捕获 StopIteration: {e.value}")
+            print(f'捕获 StopIteration: {e.value}')
 
     def test_global_statement(self):
         """
@@ -340,9 +379,9 @@ class TestDefiningFunctions:
             3. 在 / 和 * 之间，或未使用 / 和 * 时，参数可以按位置或关键字传递给函数
             4. 关键字参数必须跟在位置参数后面
             5. 关键字参数顺序并不重要
-            6. 如果一个形参具有默认值，后续所有在 "*" 之前的形参也必须具有默认值
+            6. 如果一个形参具有默认值，后续所有在 * 之前的形参也必须具有默认值
             """
-            pass
+            return po1s, pos2, pk1, pk2, kwd1, kwd2
 
         func1(1, 2, 3, 4, kwd1=5, kwd2=6)
         func1(1, 2, 3, pk2=4, kwd1=5, kwd2=6)
@@ -368,8 +407,18 @@ class TestDefiningFunctions:
         `解包实参列表 <https://docs.python.org/zh-cn/3/tutorial/controlflow.html#unpacking-argument-lists>`_
         """
         r = range(2, 5)
-        d = {"kwd1": 5, "kwd2": 6}
+        d = {'kwd1': 5, 'kwd2': 6}
         self.func2(1, *r, **d)
+
+    def test_pep448(self):
+        """
+        `PEP 448 - 进一步的解包标准化 <https://docs.python.org/zh-cn/3/whatsnew/3.5.html#whatsnew-pep-448>`_
+        """
+
+        def fn(a, b, c, d):
+            return a, b, c, d
+
+        assert fn(**{'a': 1, 'c': 3}, **{'b': 2, 'd': 4}) == (1, 2, 3, 4)
 
     def test_lamda_expressions(self):
         """
@@ -385,13 +434,47 @@ class TestDefiningFunctions:
 
 
 # endregion
-# region 输入与输出-格式化字符串
-# 更复杂的输出格式：https://docs.python.org/zh-cn/3/tutorial/inputoutput.html#fancier-output-formatting
-def test_string_formatting():
-    year = 2025
-    month = 7
-    day = 2
-    assert "Today is %d-%02d-%02d" % (year, month, day) == "Today is 2025-07-02"
-    assert f"Today is {year}-{month:02d}-{day:02d}" == "Today is 2025-07-02"
+# region 输入与输出：https://docs.python.org/zh-cn/3/tutorial/inputoutput.html
+class TestInputAndOutput:
+    # 更复杂的输出格式：https://docs.python.org/zh-cn/3/tutorial/inputoutput.html#fancier-output-formatting
+    def test_string_formatting(self):
+        """
+        `输出格式化 <https://docs.python.org/zh-cn/3/tutorial/inputoutput.html#fancier-output-formatting>`_
+        """
+        year = 2025
+        month = 7
+        day = 2
+        # 格式化字符串字面值
+        assert f'Today is {year}-{month:02d}-{day:02d}' == 'Today is 2025-07-02'
+        # 字符串 format()
+        assert 'Today is {year}-{month:02d}-{day:02d}'.format(year=year, month=month, day=day) == 'Today is 2025-07-02'
+        # 旧式字符串格式化
+        assert 'Today is %d-%02d-%02d' % (year, month, day) == 'Today is 2025-07-02'
 
+
+# endregion
+# region 错误和异常：https://docs.python.org/zh-cn/3/tutorial/errors.html
+class TestErrorsAndExceptions:
+    def test_handling_exceptions(self):
+        """ 异常的处理 """
+        try:
+            x = int('a')
+        except Exception as err:
+            print(err)
+            assert type(err) == ValueError
+            assert err.args[0] == "invalid literal for int() with base 10: 'a'"
+            assert err.__str__() == "invalid literal for int() with base 10: 'a'"
+        else:
+            print(x)
+        finally:
+            print('Goodbye, world!')
+
+    def test_raising_exceptions(self):
+        """ 触发异常 """
+        try:
+            # 主动触发异常
+            raise NameError('HiThere')
+        except NameError:
+            # 不打算处理异常，重新触发异常
+            raise
 # endregion
