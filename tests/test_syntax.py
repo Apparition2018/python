@@ -1,22 +1,37 @@
 """
 语法基础
-
 - Python      强类型动态语言
 - Java        强类型静态语言
 - JavaScript  弱类型动态语言
 """
-import copy
+import builtins
+from copy import copy, deepcopy
 from functools import reduce
+from types import FunctionType
 
 
+# region reStructuredText Docstring Format
+class TestReStructuredTextDocstringFormat:
+    """
+    reStructuredText Docstring Format
+
+    1. `Specification <https://peps.python.org/pep-0287/#specification>`_
+    2. `Online editor <https://rsted.info.ucl.ac.be/>`_
+    """
+
+
+# endregion
 # region 内置函数：https://docs.python.org/zh-cn/3/library/functions.html
 class TestBuiltinFunctions:
+    def test_builtin_function(self):
+        # id()：返回对象内存地址
+        print(id(1))
+        # dir()：返回当前本地作用域的名称列表，或指定对象的有效属性列表
+        # 不会列出内置函数和变量的名称
+        print(dir(builtins))
+
     def test_print(self):
         print('广州', '深圳', '中山', sep=' ', end='\n')
-
-    def test_id(self):
-        """ id()：返回对象内存地址 """
-        id(1)
 
     def test_range_sum(self):
         result = 0
@@ -70,12 +85,30 @@ class TestBuiltinFunctions:
         """ map(): 返回一个迭代器，该迭代器将函数应用于可迭代对象的每个项，从而产生结果 """
         assert list(map(lambda x: x * 2, [1, 2, 3])) == [2, 4, 6]
 
+    def test_type(self):
+        """
+        type()：
+
+        1. 传入一个参数时，返回对象的类型，通常与 object.__class__ 相同
+        2. 传入三个参数时，返回一个新的类型对象，本质上是 class 语句的一种动态形式
+
+            1. what 字符串：类名，并会成为 __name__ 属性
+            2. base 元组：成为 __base__ 属性，如果为空，则会添加所有类的终极基类 object
+            3. dict 字典：属性和方法，成为 __dict 属性
+        """
+        assert type('a') == 'a'.__class__
+        X = type('X', (), dict(a=1))
+        assert X.__name__ == 'X'
+        assert X.__base__ is object
+        assert 'a' in X.__dict__
+
 
 # endregion
 # region 内置类型：https://docs.python.org/zh-cn/3/library/stdtypes.html
 class TestBuiltinTypes:
     """
     1. 不可变类型：修改操作实际创建新对象，内存地址改变，可用作字典键
+
         1. 数值：int, flot, complex, bool
         2. 文本序列：str
         3. 序列：tuple，range
@@ -83,6 +116,7 @@ class TestBuiltinTypes:
         5. 集合：frozenset
 
     2. 可变类型：支持原地修改，不可用作字典键
+
         1. 序列：list
         2. 二进制序列：bytearray
         3. 映射：dict
@@ -109,15 +143,17 @@ class TestBuiltinTypes:
         `元组和序列 <https://docs.python.org/zh-cn/3/tutorial/datastructures.html#tuples-and-sequences>`_
 
         核心特征：
-            1. 有序性
-            2. 索引访问
-            3. 切片操作
-            4. 可迭代：for
-            5. 长度计算：len(seq)
 
-        `按可变性分类 <https://docs.python.org/zh-cn/3.15/reference/datamodel.html#sequences>`_：
-            1. 不可变序列：str tuple range bytes
-            2. 可变序列：list bytearray
+        1. 有序性
+        2. 索引访问
+        3. 切片操作
+        4. 可迭代：for
+        5. 长度计算：len(seq)
+
+        `按可变性分类 <https://docs.python.org/zh-cn/3/reference/datamodel.html#sequences>`_：
+
+        1. 不可变序列：str tuple range bytes
+        2. 可变序列：list bytearray
         """
         # 索引访问
         assert 'hello'[-1] == 'o'
@@ -153,13 +189,13 @@ class TestBuiltinTypes:
 
     def test_set_types(self):
         """
-        `集合类型 <https://docs.python.org/zh-cn/3/library/stdtypes.html#set-types-set-frozenset>`_
-
-        不同可哈希对象的无序集合
+        `集合类型 <https://docs.python.org/zh-cn/3/library/stdtypes.html#set-types-set-frozenset>`_：
+            不重复的可哈希对象的无序集合
 
         两种内置 Set：
-            1. set：可变的，所以没有哈希值；不能被用作字典的键或其他 set 的元素
-            2. frozenset：不可变且可哈希；可以被用作字典的键或其他 set 的元素
+
+        1. set：可变的，所以没有哈希值；不能被用作字典的键或其他 set 的元素
+        2. frozenset：不可变且可哈希；可以被用作字典的键或其他 set 的元素
         """
         # 空 Set
         s = set()
@@ -224,11 +260,11 @@ class TestDataTypes:
         c2 = c
         assert id(c) == id(c2)
         # 浅拷贝
-        c3 = copy.copy(c)
+        c3 = copy(c)
         assert id(c) != id(c3)
         assert id(c[2]) == id(c3[2])
-        # 深拷贝
-        c4 = copy.deepcopy(c)
+        #
+        c4 = deepcopy(c)
         assert id(c) != id(c4)
         assert id(c[2]) != id(c4[2])
 
@@ -261,9 +297,6 @@ def test_expressions():
 
 # endregion 运算
 # region 简单语句：https://docs.python.org/zh-cn/3/reference/simple_stmts.html
-global_x, global_y, global_z = (0, 0, 0)
-
-
 class TestSimpleStatements:
     def test_assignment_statements(self):
         # 解包与“加星”目标
@@ -291,11 +324,14 @@ class TestSimpleStatements:
         return 语句
 
         1. return 离开当前函数调用，并以表达式列表（或 None）作为返回值
-            a. 没有返回值时，返回 None
-            b. 多个返回值时，返回元组
+
+            1. 没有返回值时，返回 None
+            2. 多个返回值时，返回元组
+
         2. 生成器函数
-            a. 普通生成器函数：允许 return value；完成信号引发 StopIteration，返回值存储在 StopIteration.value
-            b. 异步生成器函数：只允许 return （无值）；完成信号引发 StopAsyncIteration
+
+            1. 普通生成器函数：允许 return value；完成信号引发 StopIteration，返回值存储在 StopIteration.value
+            2. 异步生成器函数：只允许 return （无值）；完成信号引发 StopAsyncIteration
         """
 
         def number_generator(n):
@@ -309,134 +345,142 @@ class TestSimpleStatements:
         except StopIteration as e:
             print(f'捕获 StopIteration: {e.value}')
 
-    def test_global_statement(self):
+    def test_global_nonlocal_statement(self):
         """
         global 语句
 
         1. 使标识符被解释为全局变量
         2. 给全局变量赋值，必须使用 global
         3. global 语句只在当前编译单元有效
-            a. 每个模块（.py 文件）
-            b. 每个交互式命令
-            c. 每个传递给 exec/eval/compile 的参数
-        """
-        global global_x, global_y, global_z
 
-        def modify_globals():
-            global global_x
-            global_x = 1
-            global_y = 1
+            1. 每个模块（.py 文件）
+            2. 每个交互式命令
+            3. 每个传递给 exec/eval/compile 的参数
 
-            exec_code = """
-global global_z
-global_z = 1
-"""
-            exec(exec_code, {})
-
-        modify_globals()
-        assert global_x == 1
-        assert global_y == 0
-        assert global_z == 0
-
-    def test_nonlocal_statement(self):
-        """
         nonlocal 语句
 
         1. 使标识符引用先前在非局部作用域中绑定的名称
         2. 如果名称在多个非局部作用域中绑定，则使用最近的一个绑定
         3. nonlocal 语句只在当前编译单元有效，同 global
         """
-        nonlocal_x = 0
 
-        def outer():
-            nonlocal_x = 1
+        def scope_test():
+            def do_local():
+                spam = 'local spam'
 
-            def inner():
-                nonlocal nonlocal_x
-                nonlocal_x = 2
-                print('inner x:', nonlocal_x)
+            def do_nonlocal():
+                nonlocal spam
+                spam = 'nonlocal spam'
 
-            inner()
-            print('outer x:', nonlocal_x)
+            def do_global():
+                global spam
+                spam = 'global spam'
 
-        outer()
-        print('x:', nonlocal_x)
+            spam = 'test spam'
+            do_local()
+            assert spam == 'test spam'
+            do_nonlocal()
+            assert spam == 'nonlocal spam'
+            do_global()
+            assert spam == 'nonlocal spam'
+
+        scope_test()
+        assert globals()['spam'] == 'global spam'
 
 
 # endregion
-# region 控制流程工具-定义函数
-class TestDefiningFunctions:
-    """
-    1. `简介 <https://docs.python.org/zh-cn/3/tutorial/controlflow.html#defining-functions>`_
-    2. `更多 <https://docs.python.org/zh-cn/3/tutorial/controlflow.html#more-on-defining-functions>`_
-    """
+# region 控制流程工具：https://docs.python.org/zh-cn/3/tutorial/controlflow.html
+class TestControlFlowTools:
+    class TestDefiningFunctions:
+        """
+        定义函数
 
-    def test_arguments(self):
-        def func1(po1s, pos2=0, /, pk1=0, pk2=0, *, kwd1, kwd2):
+        1. `简介 <https://docs.python.org/zh-cn/3/tutorial/controlflow.html#defining-functions>`_
+        2. `更多 <https://docs.python.org/zh-cn/3/tutorial/controlflow.html#more-on-defining-functions>`_
+        """
+
+        def test_arguments(self):
+            def func1(po1s, pos2=0, /, pk1=0, pk2=0, *, kwd1, kwd2):
+                """
+                1. 仅限位置参数：在 / 前
+                2. 仅限关键字参数：在 * 后
+                3. 在 / 和 * 之间，或未使用 / 和 * 时，参数可以按位置或关键字传递给函数
+                4. 关键字参数必须跟在位置参数后面
+                5. 关键字参数顺序并不重要
+                6. 如果一个形参具有默认值，后续所有在 * 之前的形参也必须具有默认值
+                """
+                return po1s, pos2, pk1, pk2, kwd1, kwd2
+
+            func1(1, 2, 3, 4, kwd1=5, kwd2=6)
+            func1(1, 2, 3, pk2=4, kwd1=5, kwd2=6)
+            func1(1, 2, kwd2=6, kwd1=5, pk2=4, pk1=3)
+
+        def func2(self, kind, *pos, **kwd):
             """
-            1. 仅限位置参数：在 / 前
-            2. 仅限关键字参数：在 * 后
-            3. 在 / 和 * 之间，或未使用 / 和 * 时，参数可以按位置或关键字传递给函数
-            4. 关键字参数必须跟在位置参数后面
-            5. 关键字参数顺序并不重要
-            6. 如果一个形参具有默认值，后续所有在 * 之前的形参也必须具有默认值
+            :param kind:
+            :param pos: 接受一个元组，包含形参列表之外的位置参数；该形参后只能是仅限关键字参数
+            :param kwd: 接受一个字典，包含形参列表之外的关键字参数
             """
-            return po1s, pos2, pk1, pk2, kwd1, kwd2
+            pass
 
-        func1(1, 2, 3, 4, kwd1=5, kwd2=6)
-        func1(1, 2, 3, pk2=4, kwd1=5, kwd2=6)
-        func1(1, 2, kwd2=6, kwd1=5, pk2=4, pk1=3)
+        def test_arbitrary_argument_lists(self):
+            """
+            `任意参数列表 <https://docs.python.org/zh-cn/3/tutorial/controlflow.html#arbitrary-argument-lists>`_
+            """
 
-    def func2(self, kind, *pos, **kwd):
-        """
-        :param kind:
-        :param pos: 接受一个元组，包含形参列表之外的位置参数；该形参后只能是仅限关键字参数
-        :param kwd: 接受一个字典，包含形参列表之外的关键字参数
-        """
-        pass
+            self.func2(1, 2, 3, 4, kwd1=5, kwd2=6)
 
-    def test_arbitrary_argument_lists(self):
-        """
-        `任意参数列表 <https://docs.python.org/zh-cn/3/tutorial/controlflow.html#arbitrary-argument-lists>`_
-        """
+        def test_unpacking_argument_lists(self):
+            """
+            `解包实参列表 <https://docs.python.org/zh-cn/3/tutorial/controlflow.html#unpacking-argument-lists>`_
+            """
+            r = range(2, 5)
+            d = {'kwd1': 5, 'kwd2': 6}
+            self.func2(1, *r, **d)
 
-        self.func2(1, 2, 3, 4, kwd1=5, kwd2=6)
+        def test_pep448(self):
+            """
+            `PEP 448 - 进一步的解包标准化 <https://docs.python.org/zh-cn/3/whatsnew/3.5.html#whatsnew-pep-448>`_
+            """
 
-    def test_unpacking_argument_lists(self):
-        """
-        `解包实参列表 <https://docs.python.org/zh-cn/3/tutorial/controlflow.html#unpacking-argument-lists>`_
-        """
-        r = range(2, 5)
-        d = {'kwd1': 5, 'kwd2': 6}
-        self.func2(1, *r, **d)
+            def fn(a, b, c, d):
+                return a, b, c, d
 
-    def test_pep448(self):
-        """
-        `PEP 448 - 进一步的解包标准化 <https://docs.python.org/zh-cn/3/whatsnew/3.5.html#whatsnew-pep-448>`_
-        """
+            assert fn(**{'a': 1, 'c': 3}, **{'b': 2, 'd': 4}) == (1, 2, 3, 4)
 
-        def fn(a, b, c, d):
-            return a, b, c, d
+        def test_lamda_expressions(self):
+            """
+            `Lambda 表达式 <https://docs.python.org/zh-cn/3/tutorial/controlflow.html#lambda-expressions>`_
+            """
+            add = lambda a, b=0: a + b
+            assert add(1, 1) == 2
+            assert add(1) == 1
+            # lambda 作为参数
+            pairs = [(4, 'four'), (2, 'two'), (1, 'one'), (3, 'three')]
+            pairs.sort(key=lambda pair: pair[0])
+            assert pairs == [(1, 'one'), (2, 'two'), (3, 'three'), (4, 'four')]
 
-        assert fn(**{'a': 1, 'c': 3}, **{'b': 2, 'd': 4}) == (1, 2, 3, 4)
 
-    def test_lamda_expressions(self):
+# endregion
+# region 模块：https://docs.python.org/zh-cn/3/tutorial/modules.html
+class TestModules:
+    def test__modules(self):
         """
-        `Lambda 表达式 <https://docs.python.org/zh-cn/3/tutorial/controlflow.html#lambda-expressions>`_
+        __name__：获取模块名称
+
+        - 直接运行：__main__
+        - 命令行执行：__main__
+        - 作为模块导入：模块名
+        - 测试框架中：测试文件名
+
+        __all__：__init__.py 的一个可设置变量，设置一个列表，表示 from package import * 要导入的模块
         """
-        add = lambda a, b=0: a + b
-        assert add(1, 1) == 2
-        assert add(1) == 1
-        # lambda 作为参数
-        pairs = [(4, 'four'), (2, 'two'), (1, 'one'), (3, 'three')]
-        pairs.sort(key=lambda pair: pair[0])
-        assert pairs == [(1, 'one'), (2, 'two'), (3, 'three'), (4, 'four')]
+        assert __name__ == 'tests.test_syntax'
 
 
 # endregion
 # region 输入与输出：https://docs.python.org/zh-cn/3/tutorial/inputoutput.html
 class TestInputAndOutput:
-    # 更复杂的输出格式：https://docs.python.org/zh-cn/3/tutorial/inputoutput.html#fancier-output-formatting
     def test_string_formatting(self):
         """
         `输出格式化 <https://docs.python.org/zh-cn/3/tutorial/inputoutput.html#fancier-output-formatting>`_
@@ -477,4 +521,117 @@ class TestErrorsAndExceptions:
         except NameError:
             # 不打算处理异常，重新触发异常
             raise
+
+
+# endregion
+# region 类：https://docs.python.org/zh-cn/3/tutorial/classes.html
+class TestClasses:
+    pass
+
+
+# endregion
+# region 闭包和装饰器
+class TestClosureAndDecorator:
+    def test_closure(self):
+        """
+        闭包：
+
+        1. 嵌套函数
+        2. 内部函数引用外部作用域的变量：形成广义闭包
+        3. 外部函数返回内部函数：形成“真正”的闭包，支持多次调用保持状态
+        """
+
+        def adder(value=0):
+            data = {'result': value}
+
+            def inner(increment=1):
+                data['result'] += increment
+                return data['result']
+
+            return inner
+
+        # 闭包属性
+        closure = adder()
+        assert hasattr(closure, '__closure__')
+        assert closure.__closure__ is not None
+        # 自由变量：又称闭包变量，在某个命名空间中被使用的不属于该命名空间中的局部变量的任何变量
+        assert closure.__code__.co_freevars == ('data',)
+        assert closure.__code__.co_varnames == ('increment',)
+        # 访问闭包内容
+        cell_contents = closure.__closure__[0].cell_contents if isinstance(closure, FunctionType) else None
+        assert cell_contents == {'result': 0}
+        # 状态保持能力
+        closure()
+        assert cell_contents == {'result': 1}
+        closure(3)
+        assert cell_contents == {'result': 4}
+        # 独立实例
+        closure2 = adder()
+        assert closure2() == 1
+
+    class TestDecorator:
+        """
+        `装饰器 <https://docs.python.org/zh-cn/3/glossary.html#term-decorator>`_：
+            闭包的特例，接受函数作为参数、返回新函数的可调用对象
+        """
+
+        def test_method_decorator(self):
+            """
+            `函数定义 <https://docs.python.org/zh-cn/3/reference/compound_stmts.html#function-definitions>`_
+            """
+
+            def log(func):
+                def wrapper(*args, **kwargs):
+                    print(f'🟢 开始执行: {func.__name__}{args}')
+                    result = func(*args, **kwargs)
+                    print(f'🔴 执行完成: {func.__name__} -> 返回: {result}')
+                    return result
+
+                return wrapper
+
+            def add_tags(tag):
+                def decorator(func):
+                    def wrapper(*args, **kwargs):
+                        result = func(*args, **kwargs)
+                        return f'<{tag}>{result}</{tag}>'
+
+                    return wrapper
+
+                return decorator
+
+            @log
+            @add_tags('strong')
+            @add_tags('div')
+            def greet(name):
+                return f'Hello, {name}!'
+
+            assert greet('world') == '<strong><div>Hello, world!</div></strong>' != 'Hello, world!'
+
+        def test_class_decorator(self):
+            """
+            `类定义 <https://docs.python.org/zh-cn/3/reference/compound_stmts.html#class-definitions>`_
+            """
+            register = []
+
+            def register_class(cls):
+                register.append(cls.__name__)
+                return cls
+
+            def log(cls):
+                old_init = cls.__init__
+
+                def new_init(x, *args, **kwargs):
+                    print(f'创建 {cls.__name__} 实例')
+                    old_init(x, *args, **kwargs)
+
+                cls.__init__ = new_init
+                return cls
+
+            @log
+            @register_class
+            class DataProcessor: pass
+
+            assert register == ['DataProcessor']
+            DataProcessor()
+
 # endregion
