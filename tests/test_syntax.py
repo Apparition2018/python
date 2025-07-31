@@ -5,9 +5,9 @@
 - JavaScript  弱类型动态语言
 """
 import builtins
-from copy import copy, deepcopy
-from functools import reduce
-from types import FunctionType
+import datetime
+import inspect
+from typing import Any
 
 
 # region reStructuredText Docstring Format
@@ -49,7 +49,6 @@ class TestBuiltinFunctions:
         - 语法支持：仅表达式（无复制、循环等）；完整 Python 语法
         """
         assert type(eval('[1, 2, 3]')) == list
-        pass
 
     def test_type_conversion(self):
         """ 类型转换：int(), float(), chr(), str(), tuple(), list(), set() """
@@ -101,6 +100,43 @@ class TestBuiltinFunctions:
         assert X.__name__ == 'X'
         assert X.__base__ is object
         assert 'a' in X.__dict__
+
+    def test_function_decorator(self):
+        """
+        @staticmethod
+
+        1. 将方法转换为静态方法，不会接收隐式的第一个参数
+        2. 无法直接访问类属性（只能通过类名），无法访问实例属性
+        3. 子类重写父类同名方法是隐藏（Hide）
+        4. 使用场景：与类或实例的状态无关，如工具函数
+
+        @classmethod
+
+        1. 将方法转换为类方法，接收类作为隐式的第一个参数 cls
+        2. 可通过 cls 访问类属性，无法访问实例属性
+        3. 子类重写父类同名方法是覆盖（Override）
+        4. 使用场景：
+
+            1. 动态创建类的实例，如替代构造函数
+            2. 在继承中保持多态，如工厂方法
+            3. 访问或修改类状态，如计数器、配置
+        """
+
+        class Parent:
+            @staticmethod
+            def plus(a, b):
+                return a + b
+
+            @classmethod
+            def class_name(cls):
+                return cls.__name__
+
+        class Child(Parent): pass
+
+        c = Child()
+        assert c.plus(1, 2) == 3
+        assert c.class_name() == Child.class_name() == Child.__name__
+        assert Parent.class_name() == Parent.__name__
 
 
 # endregion
@@ -256,6 +292,7 @@ class TestDataTypes:
         """
         `copy <https://docs.python.org/zh-cn/3/library/copy.html>`_
         """
+        from copy import copy, deepcopy
         c = [1, 2, [3, 4]]
         c2 = c
         assert id(c) == id(c2)
@@ -270,29 +307,97 @@ class TestDataTypes:
 
 
 # endregion
-# region 函数式编程：https://docs.python.org/zh-cn/3/library/functional.html
+# region 函数式编程模块：https://docs.python.org/zh-cn/3/library/functional.html
 class TestFunctional:
     def test_functools(self):
         """
         `functools <https://docs.python.org/zh-cn/3/library/functools.html>`_
         """
+        from functools import reduce
         assert reduce(lambda a, b: a + b, [1, 2, 3]) == 6
+
+
+# endregion
+# region Python 运行时服务：https://docs.python.org/zh-cn/3/library/python.html
+class TestPythonRuntimeServices:
+    def test_dataclasses(self):
+        """
+        `dataclasses <https://docs.python.org/zh-cn/3/library/dataclasses.html>`_：
+            提供了一个装饰器和函数，用于自动将生成的特殊方法添加到用户定义的类中
+        """
+        from dataclasses import asdict, astuple, dataclass, field, InitVar, is_dataclass, KW_ONLY
+
+        @dataclass
+        class Base:
+            id: Any = field(kw_only=True, default=None)
+            name: Any
+
+        @dataclass
+        # 继承：按反向 MRO 顺序（从 object 开始）查看它的所有基类，并将找到的每个字段添加到一个有序映射中。
+        # 此例最终的字段列表一次是：id, name, interest, birth_year, age
+        # 所有生成的方法都将使用这个有序映射
+        # 注：由于 __init()__ 中仅限关键字形参的重新排序，所以在 __init()__ 中的顺序是 name, id, interest, birth_year, age
+        class P(Base):
+            name: str
+            # KW_ONLY 类型的伪字段之后的任何字段都标记为仅限关键字字段
+            _: KW_ONLY
+            interest: list[int] = field(default_factory=list)
+            # InitVar：仅限初始化变量，不会成为正式字段（不会出现在实例属性中），用于 __post_init__()
+            birth_year: InitVar[int | None] = None
+            age: int = 0
+
+            # 将被生成的 __init__() 调用
+            def __post_init__(self, birth_year):
+                current_year = datetime.datetime.now().year
+                self.age = current_year - birth_year
+
+        # 使用 inspect.signature() 查看生成的 __init__()
+        assert (str(inspect.signature(P.__init__)) ==
+                '(self, name: str, *, id: Any = None, interest: list[int] = <factory>, birth_year: dataclasses.InitVar[int | None] = None, age: int = 0) -> None')
+        p1 = P('A', id=0, birth_year=1999)
+        p2 = P('B', id=1, birth_year=2001)
+        assert id(p1.interest) != id(p2.interest)
+        # 将数据类对象转换为字典（使用工厂函数 dict_factory）
+        assert asdict(p1) == {'id': 0, 'name': 'A', 'interest': [], 'age': 26}
+        # 将数据类对象转换为元组（使用工厂函数 tuple_factory）
+        assert astuple(p1) == (0, 'A', [], 26)
+        # 判断是否是 dataclass 或其实例
+        assert is_dataclass(p1)
+        # 判断是否为 dataclass 的实例
+        assert is_dataclass(p1) and not isinstance(p1, type)
 
 
 # endregion
 # region 表达式：https://docs.python.org/zh-cn/3/reference/expressions.html
 # 运算符：https://docs.python.org/zh-cn/3/reference/lexical_analysis.html#operators
-def test_expressions():
-    # 除法结果是 float
-    assert type(6 / 2) == float
-    # 整除
-    assert 7.0 // 2 == 3
-    assert type(7 // 2) == int
-    assert type(7.0 // 2) == float
-    # 幂运算
-    assert 2 ** 3 == 8
-    # 条件表达式/三目运算
-    print(1 if True else 0)
+class TestExpressions:
+    def test_expressions(self):
+        # 除法结果是 float
+        assert type(6 / 2) == float
+        # 整除
+        assert 7.0 // 2 == 3
+        assert type(7 // 2) == int
+        assert type(7.0 // 2) == float
+        # 幂运算
+        assert 2 ** 3 == 8
+        # 条件表达式/三目运算
+        assert 1 if True else 0 == 1
+
+    def test_generator(self):
+        # 生成器表达式
+        even_squares = (x ** 2 for x in range(10) if x % 2 == 0)
+
+        # 生成器函数
+        def generate_even_squares(n):
+            for i in range(n):
+                if i % 2 == 0:
+                    yield i ** 2
+
+        gen = generate_even_squares(10)
+        print(next(gen))
+        print(gen.send(100))
+
+        assert list(even_squares) == list(generate_even_squares(10))
 
 
 # endregion 运算
@@ -421,7 +526,6 @@ class TestControlFlowTools:
             :param pos: 接受一个元组，包含形参列表之外的位置参数；该形参后只能是仅限关键字参数
             :param kwd: 接受一个字典，包含形参列表之外的关键字参数
             """
-            pass
 
         def test_arbitrary_argument_lists(self):
             """
@@ -526,7 +630,70 @@ class TestErrorsAndExceptions:
 # endregion
 # region 类：https://docs.python.org/zh-cn/3/tutorial/classes.html
 class TestClasses:
-    pass
+    """
+    类
+
+    命名空间生命周期
+
+    1. 内置名称的命名空间：在 Python 解释器启动时创建的，永远不会被删除
+    2. 模块的命名空间：在读取模块定义时创建
+    3. 函数的局部命名空间：在函数被调用时创建；在函数返回或抛出未在函数内被处理的异常时删除
+
+    作用域：
+
+    1. L：Local，最内层作用域，包含局部名称
+    2. E：Enclosing，外层闭包函数的作用域，包含“非局部、非全局”的名称
+    3. G：Global，当前模块的全局名称
+    4. B：Built-in，内置名称的命名空间
+    """
+
+    def test_multiple_inheritance(self):
+        """
+        多重继承
+
+        1. 搜索父类属性的操作可以认为是 深度优先、从左到右
+        2. `Python 2.3 方法解析顺序 <https://docs.python.org/zh-cn/3/howto/mro.html>`_
+        """
+
+        class A:
+            def m(self):
+                return 'A'
+
+        class B(A):
+            def m(self):
+                return 'B'
+
+        class C(A):
+            def m(self):
+                return 'C'
+
+        class D(B, C): pass
+
+        # Method Resolution Order，方法解析顺序
+        assert D.__mro__ == (D, B, C, A, object)
+        assert D().m() == 'B'
+
+    def test_private_variables(self):
+        """
+        非公有部分：约定，带有一个下划线开头的标识符
+
+        私有名称：private name, 以两个或更多下划线开头，最多一个下划线结尾的标识符
+
+        私有名称改写：__spam → _classname__name
+        """
+
+        class Person:
+            def __init__(self, name, id_number):
+                self.name = name
+                self._age = None
+                self.__id_number = id_number
+
+        p = Person("Mary", "123")
+        assert p.name == "Mary"
+        # 可访问单下划线开头属性，不推荐直接访问
+        assert p._age is None
+        # 私有名称改写，不推荐直接访问
+        assert p._Person__id_number == "123"  # type: ignore[attr-defined]
 
 
 # endregion
@@ -550,6 +717,7 @@ class TestClosureAndDecorator:
 
             return inner
 
+        from types import FunctionType
         # 闭包属性
         closure = adder()
         assert hasattr(closure, '__closure__')
@@ -575,7 +743,7 @@ class TestClosureAndDecorator:
             闭包的特例，接受函数作为参数、返回新函数的可调用对象
         """
 
-        def test_method_decorator(self):
+        def test_function_decorator(self):
             """
             `函数定义 <https://docs.python.org/zh-cn/3/reference/compound_stmts.html#function-definitions>`_
             """
