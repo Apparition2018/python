@@ -7,6 +7,7 @@
 import builtins
 import datetime
 import inspect
+import re
 from typing import Any
 
 
@@ -29,6 +30,8 @@ class TestBuiltinFunctions:
         # dir()：返回当前本地作用域的名称列表，或指定对象的有效属性列表
         # 不会列出内置函数和变量的名称
         print(dir(builtins))
+        # callable()：判断对象是否可调用；如果实例所属的类有 __call__() 方法则它就是可调用的
+        assert callable(len) is True
 
     def test_print(self):
         print('广州', '深圳', '中山', sep=' ', end='\n')
@@ -49,6 +52,51 @@ class TestBuiltinFunctions:
         - 语法支持：仅表达式（无复制、循环等）；完整 Python 语法
         """
         assert type(eval('[1, 2, 3]')) == list
+
+    def test_repr_str(self):
+        """
+        repr()：
+
+        1. 目标用户：开发者（调试、日志）
+        2. 理想格式：有效的 Python 表达式
+        3. 调用方法：__repr__
+        4. 调用时机：repr(obj)、交互式解释器中直接输入对象名、容器中显示元素、f-string !r、format() !r、logging %r
+        5. 默认行为：返回 <类名 object at 内存地址>
+        6. 重建能力：语言规范要求，可被 eval() 重建
+        7. 特殊字符：转义
+
+        str()：
+
+        1. 目标用户：用户（显示）
+        2. 理想格式：人类可读的描述
+        3. 调用方法：__str__
+        4. 调用时机：str(obj)、print(obj)、f-string、format()、logging %s
+        5. 默认行为：__repr__
+        6. 重建能力：无要求
+        7. 特殊字符：直接显示
+        """
+
+        class Person:
+            def __init__(self, name, age):
+                self.name = name
+                self.age = age
+
+            def __str__(self):
+                return f"我是 {self.name}，今年 {self.age} 岁"
+
+            def __repr__(self):
+                return f"Person(name='{self.name}', age={self.age})"
+
+            def __eq__(self, other):
+                if not isinstance(other, Person):
+                    return False
+                return self.name == other.name and self.age == other.age
+
+        p = Person("Mary", 18)
+        # 容器中显示，输出：[Person(name='Mary', age=18)]
+        print([p])
+        # 重建对象
+        assert eval(repr(p)) == p
 
     def test_type_conversion(self):
         """ 类型转换：int(), float(), chr(), str(), tuple(), list(), set() """
@@ -286,6 +334,15 @@ class TestBuiltinTypes:
 
 
 # endregion
+# region 文本处理服务：https://docs.python.org/zh-cn/3/library/text.html
+class TestTextProcessingServices:
+    def test_re(self):
+        """ 正则表达式操作 """
+        # 原始字符串：(r"text")，'\' 不需要转义了
+        match = re.match(r"\W(.)\1\W", " ff ")
+
+
+# endregion
 # region 数据类型：https://docs.python.org/zh-cn/3/library/datatypes.html
 class TestDataTypes:
     def test_copy(self):
@@ -315,6 +372,38 @@ class TestFunctional:
         """
         from functools import reduce
         assert reduce(lambda a, b: a + b, [1, 2, 3]) == 6
+
+
+# endregion
+# region 通用操作系统服务：https://docs.python.org/zh-cn/3/library/allos.html
+class TestGenericOperatingSystemServices:
+    def test_io(self):
+        """
+        三种 I/O 类型：
+
+        1. 文本 I/O：期望并生成 str 对象；按照指定的编码格式自动处理编码解码、按照操作系统自动转换换行符
+
+            1. TextIOBase：TextIOWrapper、StringIO
+            2. 人类可读文本
+            3. `open("test.txt", "r", encoding="utf-8")`
+
+        2. 二进制 I/O：缓冲 I/O，接收 字节型对象 并生成 bytes 对象；不执行编码、解码、换行符转换
+
+            1. BufferedIOBase：BytesIO、BufferedReader、BufferedWriter、BufferedRandom
+            2. 非文本数据（图像/音视频/压缩文件）；网络通信；性能敏感场景（大文件、数据流）；需减少系统调用场景（频繁的小数据读写）
+            3. `open("test.txt", "rb")`
+
+        3. 原始 I/O：非缓冲 I/O，通常用作二进制和文本流的低级构建块
+
+            1. RawOIOBase：FileIO
+            2. 底层设备交互；需精确控制 I/O 行为（实时系统、设备驱动程序）；零拷贝数据处理（内存映射、数据库页直接访问）；特殊存储需求（自定义文件系统、日志结构存储）；I/O 行为分析（基准测试、性能分析）
+            3. `open("test.txt", "rb", buffering=0)`
+        """
+        f = open("test.txt", "r", encoding="utf-8")
+        assert f.name == "test.txt"
+        assert f.mode == "r"
+        assert f.readline() == "静夜思\n"
+        f.close()
 
 
 # endregion
@@ -365,6 +454,90 @@ class TestPythonRuntimeServices:
         assert is_dataclass(p1)
         # 判断是否为 dataclass 的实例
         assert is_dataclass(p1) and not isinstance(p1, type)
+
+
+# endregion
+# region 数据模型：https://docs.python.org/zh-cn/3/reference/datamodel.html
+class TestDataModel:
+    class TestTheStandardTypeHierarchy:
+        """
+        `标准类型层级结构 <https://docs.python.org/zh-cn/3/reference/datamodel.html#the-standard-type-hierarchy>`_
+
+        8. 可调用类型：可以被应用于函数调用操作，:class:`TestCallableTypes`
+        11. 类实例：:class:`TestClassInstances`
+        """
+
+        class TestCallableTypes:
+            def test_attributes(self):
+                # 函数的文档字符串
+                assert self.__doc__ is None
+                # 函数所属模块的名称
+                assert self.__module__ == 'test_syntax'
+
+        class TestClassInstances:
+            def test_special_attributes(self):
+                # 类实例所属的类
+                assert self.__class__.__name__ == 'TestClassInstances'
+                # 一个用于存储对象的（可写）属性的字典或其他映射对象
+                assert self.__dict__ == {}
+
+    class TestSpecialMethodNames:
+        """
+        `特殊方法名称 <https://docs.python.org/zh-cn/3/reference/datamodel.html#special-method-names>`_：
+            一个类通过定义具有特殊名称的方法来实现由特殊语法来唤起的特定操作
+        """
+
+        class TestBasicCustomization:
+            """
+            基本定制
+
+            - object.__del__(self)：在实例被销毁时调用
+            - object.__repr(self)：:func:`TestBuiltinFunctions.test_repr_str`
+            - object.__str__(self)：:func:`TestBuiltinFunctions.test_repr_str`
+            """
+
+            def test_new(self):
+                """
+                object.__new__(cls[, ...])：
+
+                1. 典型的实现：使用 super().__new__(cls[, ...]) 创建一个新的类实例，在返回它之前根据需求对其进行修改
+                2. 分配内存空间
+                3. 返回对象实例：①返回一个 cls 的实例，将唤起 __init__()；②未返回 cls 的实例，跳过 __init__()
+                4. 使用场景：单例、对象池、不可变对象、自定义元类
+                """
+
+                class Singleton:
+                    obj = None
+
+                    def __new__(cls, *args, **kwargs):
+                        if cls.obj is None:
+                            cls.obj = super().__new__(cls)
+                        return cls.obj
+
+                assert Singleton() == Singleton()
+
+        class TestCustomizingAttributeAccess:
+            """ 自定义属性访问 """
+
+            def test_slots(self):
+                """
+                object.__slots__
+
+                1. 允许我们显示地声明数据成员，并禁止创建 __dict__ 和 __weakref__（除非在 __slots__ 中显示地声明或是在父类中可用）
+                2. 相比 __dict__ 显著节省空间，显著提升属性查找速度
+                3. 可赋值为：字符串、可迭代对象、由实例使用的变量名组成的字符串序列
+                """
+
+        def test_emulating_callable_objects(self):
+            """
+            object.__call__(self[, args...])：模拟可调用对象，此方法在实例作为一个函数被调用时被调用
+            """
+
+            class A:
+                def __call__(self):
+                    return A.__name__
+
+            assert A()() == A.__name__
 
 
 # endregion
@@ -570,6 +743,8 @@ class TestControlFlowTools:
 class TestModules:
     def test__modules(self):
         """
+        模块是天然的单例
+
         __name__：获取模块名称
 
         - 直接运行：__main__
