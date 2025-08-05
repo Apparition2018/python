@@ -7,7 +7,8 @@
 import builtins
 import datetime
 import inspect
-import re
+import os
+import time
 from typing import Any
 
 
@@ -338,6 +339,7 @@ class TestBuiltinTypes:
 class TestTextProcessingServices:
     def test_re(self):
         """ 正则表达式操作 """
+        import re
         # 原始字符串：(r"text")，'\' 不需要转义了
         match = re.match(r"\W(.)\1\W", " ff ")
 
@@ -375,8 +377,53 @@ class TestFunctional:
 
 
 # endregion
+# region 文件和目录访问：https://docs.python.org/zh-cn/3/library/os.path.html
+class TestFileAndDirectoryAcess:
+    def test_os_path(self):
+        """
+        `常用的路径操作 <https://docs.python.org/zh-cn/3/library/os.path.html>`_
+        """
+        filepath = "./test.txt"
+        abs_path = os.path.abspath(filepath)
+        print(f"绝对路径：{abs_path}")
+        print(f"是否为绝对路径：{os.path.isabs(abs_path)}")
+        print(f"是否为文件：{os.path.isfile(abs_path)}")
+        print(f"是否为目录：{os.path.isdir(abs_path)}")
+        print(f"是否指向同一文件：{os.path.samefile(filepath, abs_path)}")
+        print(f"目录：{os.path.dirname(abs_path)}")
+        print(f"文件名：{os.path.basename(abs_path)}")
+        print(f"文件大小：{os.path.getsize(abs_path)}")
+        print(f"创建时间：{time.ctime(os.path.getctime(abs_path))}")
+        print(f"最后修改时间：{time.ctime(os.path.getatime(abs_path))}")
+        print(f"split 分离：{os.path.split(abs_path)}")
+        print(f"join 拼接：{os.path.join('home', 'user', 'documents', 'report.txt')}")
+        print(f"规范化路径：{os.path.normpath('././test.txt')}")
+
+
+# endregion
+# region 互联网数据处理：https://docs.python.org/zh-cn/3/library/index.html
+class TestInternetDataHandling:
+    def test_json(self):
+        import json
+        data = {"name": "张三", "age": 30, "skills": ["Python", "Data Science"]}
+        # ensure_ascii  对非 ASCII 字符进行转义
+        # sort_keys     按键排序
+        json_str = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)
+        print(json_str)
+        assert json.loads(json_str) == data
+        with open("test.json", "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+            assert json.load(f) == data
+
+
+# endregion
 # region 通用操作系统服务：https://docs.python.org/zh-cn/3/library/allos.html
 class TestGenericOperatingSystemServices:
+    def test_os(self):
+        """
+
+        """
+
     def test_io(self):
         """
         三种 I/O 类型：
@@ -399,11 +446,10 @@ class TestGenericOperatingSystemServices:
             2. 底层设备交互；需精确控制 I/O 行为（实时系统、设备驱动程序）；零拷贝数据处理（内存映射、数据库页直接访问）；特殊存储需求（自定义文件系统、日志结构存储）；I/O 行为分析（基准测试、性能分析）
             3. `open("test.txt", "rb", buffering=0)`
         """
-        f = open("test.txt", "r", encoding="utf-8")
-        assert f.name == "test.txt"
-        assert f.mode == "r"
-        assert f.readline() == "静夜思\n"
-        f.close()
+        with open("test.txt", "r", encoding="utf-8") as f:
+            assert f.name == "test.txt"
+            assert f.mode == "r"
+            assert f.readline() == "静夜思\n"
 
 
 # endregion
