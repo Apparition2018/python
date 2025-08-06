@@ -7,6 +7,7 @@
 import builtins
 import datetime
 import inspect
+import multiprocessing
 import os
 import time
 from typing import Any
@@ -377,8 +378,22 @@ class TestFunctional:
 
 
 # endregion
-# region 文件和目录访问：https://docs.python.org/zh-cn/3/library/os.path.html
-class TestFileAndDirectoryAcess:
+# region 文件和目录访问：https://docs.python.org/zh-cn/3/library/filesys.html
+class TestFileAndDirectoryAccess:
+    def test_pathlib(self):
+        """
+        `面向对象的文件系统路径 <https://docs.python.org/zh-cn/3/library/pathlib.html>`_
+        """
+        from pathlib import Path
+        p = Path('.')
+        print(f"绝对路径：{p.absolute()}")
+        print(f"是否存在：{p.exists()}")
+        print(f"是否为目录：{p.is_dir()}")
+        # 遍历目录下文件
+        for item in p.iterdir(): pass
+        # / 操作符可以创建子路径，如 os.path.join()
+        p / 'test.txt'
+
     def test_os_path(self):
         """
         `常用的路径操作 <https://docs.python.org/zh-cn/3/library/os.path.html>`_
@@ -399,9 +414,51 @@ class TestFileAndDirectoryAcess:
         print(f"join 拼接：{os.path.join('home', 'user', 'documents', 'report.txt')}")
         print(f"规范化路径：{os.path.normpath('././test.txt')}")
 
+    def test_tempfile(self):
+        """
+        `生成临时文件和目录 <https://docs.python.org/zh-cn/3/library/tempfile.html>`_
+        """
+        import tempfile
+        # 创建一个临时文件并向其写入一些数据
+        buffer = b'Hello World!'
+        with tempfile.TemporaryFile() as fp:
+            fp.write(buffer)
+            # 从文件读取数据
+            fp.seek(0)
+            assert fp.read() == buffer
+        # delete_on_close：默认 True，文件在 close() 时自动删除
+        with tempfile.NamedTemporaryFile(delete_on_close=False) as fp:
+            fp.close()
+            # 文件已被关闭，但因为 delete_on_close=False 所以未被删除
+            with open(fp.name, mode='rb') as f:
+                f.read()
+        # 创建一个临时目录
+        with tempfile.TemporaryDirectory() as tmp_dir_name:
+            print(tmp_dir_name)
+
+    def test_shutil(self):
+        """
+        `高层级文件操作 <https://docs.python.org/zh-cn/3/library/shutil.html#module-shutil>`_
+
+        从 Python 3.8 开始，所有涉及文件拷贝的函数 (copyfile(), copy(), copy2(), copytree() 以及 move()) 将会使用平台专属的 "fast-copy" 系统调用以便更高效地拷贝文件
+        """
+        import shutil
+        # 递归复制目录树，忽略与提供模式匹配的文件和目录
+        shutil.copytree(".", "copy/", ignore=shutil.ignore_patterns('*.py', 'tmp*'))
+
+        # 自定义 ignore 函数，忽略所有目录
+        def my_ignore(path, names):
+            print(f'Working in {path}')
+            return [name for name in names if os.path.isdir(os.path.join(path, name))]
+
+        # dirs_exist_ok，默认 False，是否允许目标目录已存在
+        shutil.copytree(".", "copy/", ignore=my_ignore, dirs_exist_ok=True)
+        # 删除一个完整的目录树
+        shutil.rmtree("copy/", ignore_errors=True)
+
 
 # endregion
-# region 互联网数据处理：https://docs.python.org/zh-cn/3/library/index.html
+# region 互联网数据处理：https://docs.python.org/zh-cn/3/library/netdata.html
 class TestInternetDataHandling:
     def test_json(self):
         import json
@@ -411,8 +468,9 @@ class TestInternetDataHandling:
         json_str = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)
         print(json_str)
         assert json.loads(json_str) == data
-        with open("test.json", "w", encoding="utf-8") as f:
+        with open("test.json", "w+", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+            f.seek(0)
             assert json.load(f) == data
 
 
@@ -421,8 +479,36 @@ class TestInternetDataHandling:
 class TestGenericOperatingSystemServices:
     def test_os(self):
         """
+        `多种操作系统接口 <https://docs.python.org/zh-cn/3/library/os.html>`_
 
+        适用性说明：
+
+        1. 只要某个功能在多个操作系统上都可用，Python 就会提供一个统一的接口，让你用相同的方式调用它
+        2. 所有接受路径或文件名的函数都同时支持字节串和字符串对象，并在返回路径或文件名时使用相应类型的对象作为结果
         """
+        print(f"当前进程 ID：{os.getpid()}")
+        print(f"父进程 ID：{os.getppid()}")
+        print(f"当前工作目录：{os.getcwd()}")
+        print(f"目录下文件的名称：{os.listdir()}")
+        new_dir = "test_dir"
+        if not os.path.exists(new_dir):
+            # 创建目录
+            os.mkdir(new_dir)
+        # 改变工作目录
+        # os.chdir(new_dir)
+        # 删除目录
+        os.rmdir(new_dir)
+        # 递归创建目录，即使目录已存在
+        os.makedirs(new_dir, exist_ok=True)
+        file_path = os.path.join(new_dir, "empty.txt")
+        # 创建一个文件
+        with open(file_path, "w"): pass
+        new_file_path = os.path.join(new_dir, "new_file.txt")
+        # 重命名文件
+        os.rename(file_path, new_file_path)
+        # 删除文件
+        os.remove(new_file_path)
+        os.rmdir(new_dir)
 
     def test_io(self):
         """
@@ -453,8 +539,57 @@ class TestGenericOperatingSystemServices:
 
 
 # endregion
+# region 并发执行：https://docs.python.org/zh-cn/3/library/concurrency.html
+class TestConcurrentExecution:
+    @staticmethod
+    def run_execvp():
+        os.execvp("cmd", ["cmd", "/c", "dir"])
+
+    def test_multiprocessing(self):
+        """
+        `基于进程的并行 <https://docs.python.org/zh-cn/3/library/multiprocessing.html>`_：
+            通过使用子进程而非线程有效地绕过`全局解释器锁 <#gil>`_
+
+        <a id="gil">全局解释器锁</a>：global interpreter lock，CPython 解释器所采用的一种机制，它确保同一时刻只有一个线程在执行 Python bytecode
+        """
+        p = multiprocessing.Process(target=self.run_execvp)
+        p.start()
+        p.join(timeout=10)
+        assert p.exitcode == 0
+
+
+# endregion
 # region Python 运行时服务：https://docs.python.org/zh-cn/3/library/python.html
 class TestPythonRuntimeServices:
+    def test_sys(self):
+        """
+        `系统相关的形参和函数 <https://docs.python.org/zh-cn/3/library/sys.html>`_
+        """
+        import sys
+        # 命令行参数
+        assert sys.argv[1] == 'test_syntax.py::TestPythonRuntimeServices::test_sys'
+        # Python 模块搜索路径
+        assert sys.path[0] == r'D:\Liang\git\python\tests'
+        # 平台标识
+        assert sys.platform == 'win32'
+        # Python 版本
+        assert sys.version_info > (3, 8)
+        # 标准输入输出流
+        sys.stdout.write("Hello\n")
+        sys.stderr.write("Error message\n")
+        # 已加载模块
+        assert sys.modules['sys'] is sys
+        # 获取对象内存大小
+        assert sys.getsizeof(1) == 28
+        # Python 解释器路径
+        assert sys.executable == 'D:\Python\Python313\python.exe'
+        # 获取系统用于文件系统编码的编码方式
+        assert sys.getfilesystemencoding() == "utf-8"
+        # 主 Python 解析器是否正在关闭
+        assert sys.is_finalizing() is False
+        # 引发一个 SystemExit 异常，表示打算退出解释器
+        sys.exit()
+
     def test_dataclasses(self):
         """
         `dataclasses <https://docs.python.org/zh-cn/3/library/dataclasses.html>`_：
