@@ -7,10 +7,12 @@
 import builtins
 import datetime
 import inspect
+import logging
 import multiprocessing
 import os
+import threading
 import time
-from typing import Any
+from typing import Any, Callable, List
 
 
 # region reStructuredText Docstring Format
@@ -114,6 +116,21 @@ class TestBuiltinFunctions:
         iterator = iter(range(1, 3))
         assert next(iterator) == 1
         assert next(iterator) == 2
+
+        # 自定义迭代器
+        class Reverse:
+            def __init__(self, data):
+                self.data = data
+                self.index = len(data)
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                if self.index == 0:
+                    raise StopIteration
+                self.index = self.index - 1
+                return self.data[self.index]
 
     def test_enumerate_zip(self):
         """
@@ -458,6 +475,19 @@ class TestFileAndDirectoryAccess:
 
 
 # endregion
+# region 网络和进程间通信：https://docs.python.org/zh-cn/3/library/ipc.html
+class TestNetworkingAndInterprocessCommunication:
+    def test_asyncio(self):
+        """
+        `异步 I/O <https://docs.python.org/zh-cn/3/library/asyncio.html>`_`:
+
+        1. 用来编写并发代码的库，使用 async/await 语法
+        2. 被用作多个提供高性能 Python 异步框架的基础，包括网络和网站访问，数据库连接库，分布式任务队列等
+        3. 构建 IO 密集型和高层级结构化网络代码的最佳选择
+        """
+
+
+# endregion
 # region 互联网数据处理：https://docs.python.org/zh-cn/3/library/netdata.html
 class TestInternetDataHandling:
     def test_json(self):
@@ -542,20 +572,163 @@ class TestGenericOperatingSystemServices:
 # region 并发执行：https://docs.python.org/zh-cn/3/library/concurrency.html
 class TestConcurrentExecution:
     @staticmethod
-    def run_execvp():
-        os.execvp("cmd", ["cmd", "/c", "dir"])
+    def crawl(link, method):
+        print(f"crawl started for {link} by {method}")
+        time.sleep(1)
+        print(f"crawl ended for {link} by {method}")
+
+    links = [
+        "https://python.org",
+        "https://docs.python.org",
+        "https://peps.python.org",
+    ]
+
+    def test_demo(self):
+        from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+
+        # region：threading
+        threads = []
+        for link in self.links:
+            t = threading.Thread(target=self.crawl, args=(link,), kwargs={"method": "threading"})
+            threads.append(t)
+        for t in threads: t.start()
+        for t in threads: t.join()
+        # endregion
+
+        # region：multiprocessing
+        processes = []
+        for link in self.links:
+            p = multiprocessing.Process(target=self.crawl, args=(link,),
+                                        kwargs={"method": "multiprocessing"})
+            processes.append(p)
+        for p in processes: p.start()
+        for p in processes: p.join()
+        # endregion
+
+        # region：ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            [executor.submit(self.crawl, link, "ThreadPoolExecutor") for link in self.links]
+        # endregion
+
+        # region：ProcessPoolExecutor
+        with ProcessPoolExecutor(max_workers=3) as executor:
+            [executor.submit(self.crawl, link, "ProcessPoolExecutor") for link in self.links]
+        # endregion
+
+    class TestThreading:
+        """
+        `基于线程的并行 <https://docs.python.org/zh-cn/3/library/threading.html>`_：
+            提供了一种在单个进程内部并发地运行多个线程的方式；线程适用于 I/O 密集型的任务，如文件操作或发送网络请求
+
+        <a id="gil">全局解释器锁</a>：global interpreter lock，CPython 解释器所采用的一种机制，它确保同一时刻只有一个线程在执行 Python bytecode
+        """
+
+        def test_thread_local_data(self):
+            """
+            `线程局部数据 <https://docs.python.org/zh-cn/3/library/threading.html#thread-local-data>`_：Thread-local data
+            """
+            local_data = threading.local()
+            threads = []
+
+            def worker(name):
+                local_data.name = name
+                print(f"线程: {threading.current_thread().name}, 名字: {local_data.name}")
+
+            threads.append(threading.Thread(target=worker, args=("Alice",), name="T1"))
+            threads.append(threading.Thread(target=worker, args=("Bob",), name="T2"))
+            for t in threads: t.start()
+            for t in threads: t.join()
+
+        class BankAccount:
+            def __init__(self):
+                self._balance = 0
+                # RLock 可重入锁，相当于 Java ReentrantLock、.NET lock (Monitor)
+                self._lock = threading.RLock()
+                self._mp_lock = multiprocessing.RLock()
+                self._spin_lock = threading.Lock()
+                self._semaphore = threading.Semaphore(2)
+                self._event = threading.Event()
+                self._event.set()
+
+            def lock_deposit(self, amount):
+                self._lock.acquire()
+                try:
+                    self._deposit(amount)
+                finally:
+                    self._lock.release()
+
+            def lock_deposit_v2(self, amount):
+                with self._lock:
+                    self._deposit(amount)
+
+            def mp_lock_deposit(self, amount):
+                with self._mp_lock:
+                    self._deposit(amount)
+
+            # threading.Lock + 自旋等待，模拟 .NET SpinLock
+            def spin_lock_deposit(self, amount):
+                while not self._spin_lock.acquire(blocking=False):
+                    # 小延迟避免 CPU 占用过高
+                    time.sleep(0.0001)
+                try:
+                    self._deposit(amount)
+                finally:
+                    self._spin_lock.release()
+
+            def semaphore_deposit(self, amount):
+                with self._semaphore:
+                    self._deposit(amount)
+
+            def event_deposit(self, amount):
+                self._event.wait()
+                try:
+                    self._deposit(amount)
+                finally:
+                    self._event.clear()
+                    self._event.set()
+
+            def _deposit(self, amount: int):
+                logging.info(f"正在存款 {amount} 到账户，当前余额: {self._balance}")
+                time.sleep(0.01)
+                self._balance += amount
+                logging.info(f"存款完成，新的余额: {self._balance}")
+
+        def test_synchronization_objects(self):
+            """ 同步对象 """
+            account = self.BankAccount()
+
+            sync_methods: List[Callable[[int], None]] = [
+                account.lock_deposit,
+                account.lock_deposit_v2,
+                account.mp_lock_deposit,
+                account.spin_lock_deposit,
+                account.semaphore_deposit,
+                account.event_deposit,
+            ]
+
+            threads = []
+            for method in sync_methods:
+                thread = threading.Thread(target=method, args=(100,))
+                threads.append(thread)
+                thread.start()
+
+            for thread in threads: thread.join()
+            logging.info("所有存款操作已完成")
 
     def test_multiprocessing(self):
         """
         `基于进程的并行 <https://docs.python.org/zh-cn/3/library/multiprocessing.html>`_：
-            通过使用子进程而非线程有效地绕过`全局解释器锁 <#gil>`_
-
-        <a id="gil">全局解释器锁</a>：global interpreter lock，CPython 解释器所采用的一种机制，它确保同一时刻只有一个线程在执行 Python bytecode
+            通过使用子进程而非线程有效地绕过`全局解释器锁 <#gil>`_；适用于 CPU 密集型任务
         """
-        p = multiprocessing.Process(target=self.run_execvp)
-        p.start()
-        p.join(timeout=10)
-        assert p.exitcode == 0
+
+    def test_concurrent_futures(self):
+        """
+        `启动并行任务 <https://docs.python.org/zh-cn/3/library/concurrent.futures.html>`_：提供异步执行可调用对象高层接口
+
+        1. ThreadPoolExecutor：Executor 子类，使用线程池来异步执行调用
+        2. ProcessPoolExecutor：Executor 子类，使用进程池来异步执行调用
+        3. Future：将可调用对象封装为异步执行
+        """
 
 
 # endregion
@@ -588,7 +761,10 @@ class TestPythonRuntimeServices:
         # 主 Python 解析器是否正在关闭
         assert sys.is_finalizing() is False
         # 引发一个 SystemExit 异常，表示打算退出解释器
-        sys.exit()
+        try:
+            sys.exit()
+        except SystemExit:
+            pass
 
     def test_dataclasses(self):
         """
