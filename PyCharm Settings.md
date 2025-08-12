@@ -1,4 +1,4 @@
-# Rider Settings
+# Pycharm Settings
 - -n: New
 - -e: Every Time
 ---
@@ -8,7 +8,13 @@
     2. Add Interpreter →  Add Local Interpreter…
 ---
 ## Other
-### pytest 显示 logging
-    1. Edit Configurations… → Edit configuration templates…
-    2. Python tests → pytest → Additional argumentes: --log-cli-level=INFO
+### pip
+    pip install package_name
+    pip install --upgrade package_name
+    pip uninstall package_name
+    pip show package_name
+    pip list
+    pip freeze > requirements.txt
+    pip install -r requirements.txt
+    pip cache purge
 ---
