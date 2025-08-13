@@ -79,7 +79,6 @@ class TestThreading:
     class BankAccount:
         def __init__(self):
             self._balance = 0
-            # RLock 可重入锁，相当于 Java ReentrantLock、.NET lock (Monitor)
             self._lock = threading.RLock()
             self._spin_lock = threading.Lock()
             self._semaphore = threading.Semaphore(2)
@@ -204,7 +203,7 @@ class TestMultiprocessing:
         p2.join()
         # endregion
 
-        # region 2. Pipe：点对点
+        # region 2. Pipe：点对点（监听器-客户端）
         parent_conn, child_conn = Pipe()
         p = Process(target=self.child, args=(child_conn,))
         p.start()
@@ -229,6 +228,17 @@ class TestMultiprocessing:
             for p in processes: p.join()
             print(list(shared_list))
         # endregion
+
+    def test_pool(self):
+        """ 工作进程池 """
+        import os
+        from multiprocessing import Pool
+        with Pool(processes=4) as pool:
+            assert pool.map(abs, range(10)) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+            results = [pool.apply_async(os.getpid) for _ in range(1000)]
+            # 集合推导式去重
+            print({result.get(timeout=1) for result in results})
 
 
 def test_concurrent_futures():

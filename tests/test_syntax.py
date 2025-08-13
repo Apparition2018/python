@@ -4,12 +4,15 @@
 - Java        强类型静态语言
 - JavaScript  弱类型动态语言
 """
+import asyncio
 import builtins
 import datetime
 import inspect
 import os
 import time
 from typing import Any
+
+import pytest
 
 
 # region reStructuredText Docstring Format
@@ -352,11 +355,30 @@ class TestBuiltinTypes:
 # endregion
 # region 文本处理服务：https://docs.python.org/zh-cn/3/library/text.html
 class TestTextProcessingServices:
-    def test_re(self):
-        """ 正则表达式操作 """
-        import re
-        # 原始字符串：(r"text")，'\' 不需要转义了
-        match = re.match(r"\W(.)\1\W", " ff ")
+    class TestRE:
+        """
+        `正则表达式操作 <https://docs.python.org/zh-cn/3/library/re.html>`_
+
+        `正则表达式指南 <https://docs.python.org/zh-cn/3/howto/regex.html#regex-howto>`_
+        """
+
+        def test_re(self):
+            def display_match(match):
+                if match is None:
+                    return None
+                # group() 返回一个或者多个匹配的子组
+                # groups 返回一个元组，包含所有匹配的子组
+                return '<Match: %r, groups=%r>' % (match.group(), match.groups())
+
+            import re
+            # r"text" 原始字符串，避免转义问题
+            # re.compile() 将正则表达式的样式编译为一个 正则表达式对象
+            # 字符串是否为有效扑克牌
+            valid = re.compile(r"^[a2-9tjqk]{5}$")
+            assert display_match(valid.match("akt5q")) == "<Match: 'akt5q', groups=()>"
+            # 字符串是否包含对子
+            pair = re.compile(r".*(.).*\1")
+            assert display_match(pair.match("717ak")) == "<Match: '717', groups=('7',)>"
 
 
 # endregion
@@ -474,14 +496,66 @@ class TestFileAndDirectoryAccess:
 # endregion
 # region 网络和进程间通信：https://docs.python.org/zh-cn/3/library/ipc.html
 class TestNetworkingAndInterprocessCommunication:
-    def test_asyncio(self):
+    class TestAsyncio:
         """
-        `异步 I/O <https://docs.python.org/zh-cn/3/library/asyncio.html>`_`:
+        `异步 I/O <https://docs.python.org/zh-cn/3/library/asyncio.html>`_：
 
         1. 用来编写并发代码的库，使用 async/await 语法
         2. 被用作多个提供高性能 Python 异步框架的基础，包括网络和网站访问，数据库连接库，分布式任务队列等
         3. 构建 IO 密集型和高层级结构化网络代码的最佳选择
         """
+
+        class TestCoroutinesAndTasks:
+            """
+            `协程和任务 <https://docs.python.org/zh-cn/3/library/asyncio-task.html>`_：
+                使用 async/await 语法声明的协程是编写 asyncio 应用程序的首选方式
+
+            实现方式：
+
+            1. 内置：asyncio + async def/await，基于事件循环机制
+            2. 第三方：greenlet（需显式切换）/gevent（自动调度）
+            """
+
+            @staticmethod
+            async def say_after(what, delay=0.1):
+                await asyncio.sleep(delay)
+                print(what)
+
+            def test_coroutines(self):
+                async def main():
+                    print(f"started at {time.strftime('%X')}")
+                    await self.say_after('hello')
+                    await self.say_after('world')
+                    print(f"finished at {time.strftime('%X')}")
+
+                asyncio.run(main())
+
+            @pytest.mark.asyncio
+            async def test_coroutines2(self):
+                print(f"started at {time.strftime('%X')}")
+                await asyncio.create_task(self.say_after('hello'))
+                await asyncio.create_task(self.say_after('world'))
+                print(f"finished at {time.strftime('%X')}")
+
+            @pytest.mark.asyncio
+            async def test_coroutines3(self):
+                async with asyncio.TaskGroup() as tg:
+                    tg.create_task(self.say_after('hello'))
+                    tg.create_task(self.say_after('world'))
+                    print(f"started at {time.strftime('%X')}")
+                print(f"finished at {time.strftime('%X')}")
+
+            def test_coroutines_by_gevent(self):
+                def say_after(what, delay=0.1):
+                    gevent.sleep(delay)
+                    print(what)
+
+                import gevent
+                print(f"started at {time.strftime('%X')}")
+                task1 = gevent.spawn(say_after, 'hello')
+                task2 = gevent.spawn(say_after, 'world')
+                gevent.joinall([task1, task2])
+                print(f"finished at {time.strftime('%X')}")
 
 
 # endregion
@@ -749,17 +823,20 @@ class TestExpressions:
 
     def test_generator(self):
         # 生成器表达式
-        even_squares = (x ** 2 for x in range(10) if x % 2 == 0)
+        even_squares = (i ** 2 for i in range(10) if i % 2 == 0)
 
         # 生成器函数
         def generate_even_squares(n):
             for i in range(n):
                 if i % 2 == 0:
-                    yield i ** 2
+                    received = yield i ** 2
+                    print(i, received)
 
         gen = generate_even_squares(10)
-        print(next(gen))
-        print(gen.send(100))
+
+        assert next(gen) == 0
+        assert next(gen) == 4
+        assert gen.send(100) == 16
 
         assert list(even_squares) == list(generate_even_squares(10))
 
@@ -974,7 +1051,6 @@ class TestErrorsAndExceptions:
         try:
             x = int('a')
         except Exception as err:
-            print(err)
             assert type(err) == ValueError
             assert err.args[0] == "invalid literal for int() with base 10: 'a'"
             assert err.__str__() == "invalid literal for int() with base 10: 'a'"
@@ -1167,5 +1243,4 @@ class TestClosureAndDecorator:
 
             assert register == ['DataProcessor']
             DataProcessor()
-
 # endregion
