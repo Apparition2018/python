@@ -440,6 +440,7 @@ class TestFileAndDirectoryAccess:
         print(f"是否为绝对路径：{os.path.isabs(abs_path)}")
         print(f"是否为文件：{os.path.isfile(abs_path)}")
         print(f"是否为目录：{os.path.isdir(abs_path)}")
+        print(f"是否为已存在路径：{os.path.exists(abs_path)}")
         print(f"是否指向同一文件：{os.path.samefile(filepath, abs_path)}")
         print(f"目录：{os.path.dirname(abs_path)}")
         print(f"文件名：{os.path.basename(abs_path)}")
@@ -578,7 +579,7 @@ class TestInternetDataHandling:
 # endregion
 # region 通用操作系统服务：https://docs.python.org/zh-cn/3/library/allos.html
 class TestGenericOperatingSystemServices:
-    def test_os(self):
+    class TestOS:
         """
         `多种操作系统接口 <https://docs.python.org/zh-cn/3/library/os.html>`_
 
@@ -587,29 +588,38 @@ class TestGenericOperatingSystemServices:
         1. 只要某个功能在多个操作系统上都可用，Python 就会提供一个统一的接口，让你用相同的方式调用它
         2. 所有接受路径或文件名的函数都同时支持字节串和字符串对象，并在返回路径或文件名时使用相应类型的对象作为结果
         """
-        print(f"当前进程 ID：{os.getpid()}")
-        print(f"父进程 ID：{os.getppid()}")
-        print(f"当前工作目录：{os.getcwd()}")
-        print(f"目录下文件的名称：{os.listdir()}")
-        new_dir = "test_dir"
-        if not os.path.exists(new_dir):
-            # 创建目录
-            os.mkdir(new_dir)
-        # 改变工作目录
-        # os.chdir(new_dir)
-        # 删除目录
-        os.rmdir(new_dir)
-        # 递归创建目录，即使目录已存在
-        os.makedirs(new_dir, exist_ok=True)
-        file_path = os.path.join(new_dir, "empty.txt")
-        # 创建一个文件
-        with open(file_path, "w"): pass
-        new_file_path = os.path.join(new_dir, "new_file.txt")
-        # 重命名文件
-        os.rename(file_path, new_file_path)
-        # 删除文件
-        os.remove(new_file_path)
-        os.rmdir(new_dir)
+
+        def test_os(self):
+            # 导入的操作系统相关模块的名称，'posix', 'nt', 'java'
+            assert os.name == 'nt'
+            # 环境变量
+            assert os.environ['OS'] == os.getenv('OS') == r'Windows_NT'
+            # 以系统分隔符拆分路径
+            print(f"当前进程 ID：{os.getpid()}")
+            print(f"父进程 ID：{os.getppid()}")
+
+        def test_path_like(self):
+            print(f"当前工作目录：{os.getcwd()}")
+            print(f"目录下文件的名称：{os.listdir()}")
+            new_dir = "test_dir"
+            if not os.path.exists(new_dir):
+                # 创建目录
+                os.mkdir(new_dir)
+            # 改变工作目录
+            # os.chdir(new_dir)
+            # 删除目录
+            os.rmdir(new_dir)
+            # 递归创建目录，即使目录已存在
+            os.makedirs(new_dir, exist_ok=True)
+            file_path = os.path.join(new_dir, "empty.txt")
+            # 创建一个文件
+            with open(file_path, "w"): pass
+            new_file_path = os.path.join(new_dir, "new_file.txt")
+            # 重命名文件
+            os.rename(file_path, new_file_path)
+            # 删除文件
+            os.remove(new_file_path)
+            os.rmdir(new_dir)
 
     def test_io(self):
         """
@@ -637,6 +647,65 @@ class TestGenericOperatingSystemServices:
             assert f.name == "test.txt"
             assert f.mode == "r"
             assert f.readline() == "静夜思\n"
+
+    def test_time(self):
+        """
+        `时间的访问和转换 <https://docs.python.org/zh-cn/3/library/time.html>`_
+
+        时间格式：
+
+        1. 时间戳 float(seconds)
+        2. 元组   struct_time
+        3. 字符串 str
+        """
+        import calendar
+
+        # 当前时间戳：返回以浮点数表示的从 epoch 开始的秒数形式的时间
+        print(time.time())
+
+        # epoch 起始的时间点
+        t = time.gmtime(0)
+
+        # region float → struct_time
+        assert time.gmtime(0)[:9] == (1970, 1, 1, 0, 0, 0, 3, 1, 0)
+        local_t = time.localtime(0)
+        assert local_t[:9] == (1970, 1, 1, 8, 0, 0, 3, 1, 0)
+        # endregion
+
+        # region struct_time → float
+        # localtime() 的反函数
+        assert time.mktime(local_t) == 0
+        assert calendar.timegm(t) == 0
+        # endregion
+
+        # region float → str
+        assert time.ctime(0) == 'Thu Jan  1 08:00:00 1970'
+        # endregion
+
+        # region struct_time → str
+        assert time.asctime(t) == 'Thu Jan  1 00:00:00 1970'
+        time_format = '%Y-%m-%d, %H:%M:%S %Z'
+        formatted = time.strftime(time_format, t)
+        assert formatted == '1970-01-01, 00:00:00 中国标准时间'
+        # endregion
+
+        # region str → struct_time
+        assert time.strptime(formatted, time_format) == t
+        # endregion
+
+        # region struct_time 属性
+        assert t.tm_year == 1970
+        assert t.tm_mon == 1
+        assert t.tm_mday == 1
+        assert t.tm_hour == 0
+        assert t.tm_min == 0
+        assert t.tm_sec == 0
+        assert t.tm_wday == 3
+        assert t.tm_yday == 1
+        assert t.tm_isdst == 0
+        assert t.tm_zone == 'UTC'
+        assert t.tm_gmtoff == 0
+        # endregion
 
 
 # endregion
