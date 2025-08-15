@@ -9,6 +9,7 @@ import builtins
 import datetime
 import inspect
 import os
+import random
 import time
 from typing import Any
 
@@ -163,10 +164,10 @@ class TestBuiltinFunctions:
             3. dict 字典：属性和方法，成为 __dict 属性
         """
         assert type('a') == 'a'.__class__
-        X = type('X', (), dict(a=1))
-        assert X.__name__ == 'X'
-        assert X.__base__ is object
-        assert 'a' in X.__dict__
+        cls_x = type('X', (), dict(a=1))
+        assert cls_x.__name__ == 'X'
+        assert cls_x.__base__ is object
+        assert 'a' in cls_x.__dict__
 
     def test_function_decorator(self):
         """
@@ -403,6 +404,58 @@ class TestDataTypes:
 
 
 # endregion
+# region 数字和数学模块：https://docs.python.org/zh-cn/3/library/numeric.html
+class TestNumericAndMathematicalModules:
+    class TestRandom:
+        """
+        `生成伪随机数 <https://docs.python.org/zh-cn/3/library/random.html>`_
+        """
+
+        def test_random(self):
+            # 随机浮点数，0.0 <= x < 1.0
+            assert 0 <= random.random() < 1
+            # 随机浮点数，1.0 <= x <= 2.0
+            assert 1 <= random.uniform(1, 2) <= 2
+            # [0, 9] 的整数
+            assert random.randint(0, 9) in range(10)
+            # [0, 9] 的整数
+            assert random.randrange(10) in range(10)
+            # [0, 10] 的偶数
+            assert random.randrange(0, 11, 2) in range(0, 11, 2)
+            # 从非空序列 seq 返回一个随机元素
+            assert random.choice(range(10)) in range(10)
+            # 洗牌
+            l = list(range(10))
+            random.shuffle(l)
+            print(l)
+            # 不重复随机抽样
+            print(random.sample(range(10), 3))
+
+        def test_simulations(self):
+            # 1. 六次轮盘旋转（可重复的带权重取样）
+            # 从 population 中有重复地随机选取元素，返回大小为 k 的元素列表
+            print(random.choices(['red', 'black', 'green'], [18, 18, 2], k=6))
+
+            # 2. 从一套扑克 52 张牌中不重复的抽取 20 张，并以十以上的大牌来确定牌的对比值
+            # counts=[16, 36] 表示 16 张 high cards，36 张 low cards
+            print(random.sample(['high cards', 'low cards'], counts=[16, 36], k=20).count('high cards') / 20)
+
+            # 3. 估计一个被做了手脚的正面朝上概率为 60% 硬币，在 7 次抛掷中得到 5 次及以上正面的概率
+            print(sum(random.binomialvariate(n=7, p=0.6) >= 5 for i in range(10_000)) / 10_000)
+
+            # 4. 5 个样本的中位数位于中间两个四分位区之内的概率
+            def trial():
+                return 2_500 <= sorted(random.choices(range(10_000), k=5))[2] < 7_500
+
+            sum(trial() for i in range(10_000)) / 10_000
+
+        def test_random_selections_from_itertools_combinatoric_iterators(self):
+            """
+            模拟从 itertools 的排列组合迭代器中进行随机抽样：`例程 <https://docs.python.org/zh-cn/3/library/random.html#recipes>`_
+            """
+
+
+# endregion
 # region 函数式编程模块：https://docs.python.org/zh-cn/3/library/functional.html
 class TestFunctional:
     def test_functools(self):
@@ -426,7 +479,7 @@ class TestFileAndDirectoryAccess:
         print(f"是否存在：{p.exists()}")
         print(f"是否为目录：{p.is_dir()}")
         # 遍历目录下文件
-        for item in p.iterdir(): pass
+        for _ in p.iterdir(): pass
         # / 操作符可以创建子路径，如 os.path.join()
         p / 'test.txt'
 
