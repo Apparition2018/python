@@ -5,7 +5,10 @@
 ## Settings → Project
 ### Python Interpreter
     1. Settings → Project:[项目名] →  Python Interpreter
-    2. Add Interpreter →  Add Local Interpreter…
+    2. Python Interpreter → 点击 → Show All…
+    3. + → Add Local Interpreter…
+    4. Select existing → Python path: ..\.venv\Scripts\python.exe → OK
+    5. 右键刚刚 Add 的 Interpreter → Rename
 ---
 ## Other
 ### pip
