@@ -1,9 +1,14 @@
+certifi==2025.8.3
 cffi==1.17.1
+charset-normalizer==3.4.3
 colorama==0.4.6
+fake-useragent==2.2.0
 gevent==25.5.1
 greenlet==3.2.4
+idna==3.10
 iniconfig==2.1.0
 Jinja2==3.1.6
+jsonpath==0.82.2
 loguru==0.7.3
 MarkupSafe==3.0.2
 packaging==25.0
@@ -13,7 +18,9 @@ pycparser==2.22
 Pygments==2.19.2
 pytest==8.4.1
 pytest-asyncio==1.1.0
+requests==2.32.5
 setuptools==80.9.0
+urllib3==2.5.0
 win32_setctime==1.2.0
 zope.event==5.1.1
 zope.interface==7.2

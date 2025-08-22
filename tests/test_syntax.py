@@ -8,13 +8,18 @@ import asyncio
 import builtins
 import datetime
 import inspect
+import json
+import multiprocessing
 import os
 import random
+import re
 import threading
 import time
 from typing import Any
 
 import pytest
+import requests
+from fake_useragent import UserAgent
 from loguru import logger
 
 
@@ -373,7 +378,6 @@ class TestTextProcessingServices:
                 # groups 返回一个元组，包含所有匹配的子组
                 return '<Match: %r, groups=%r>' % (match.group(), match.groups())
 
-            import re
             # r"text" 原始字符串，避免转义问题
             # re.compile() 将正则表达式的样式编译为一个 正则表达式对象
             # 字符串是否为有效扑克牌
@@ -565,14 +569,12 @@ class TestConcurrentExecution:
     ]
 
     def test_concurrency(self):
-        from threading import Thread, Timer
-        from multiprocessing import Process
         from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 
         # region：Thread
         threads = []
         for link in self.links:
-            t = Thread(target=self.crawl, args=(link,), kwargs={"method": "Thread"})
+            t = threading.Thread(target=self.crawl, args=(link,), kwargs={"method": "Thread"})
             threads.append(t)
         for t in threads: t.start()
         for t in threads: t.join()
@@ -581,7 +583,7 @@ class TestConcurrentExecution:
         # region：Process
         processes = []
         for link in self.links:
-            p = Process(target=self.crawl, args=(link,), kwargs={"method": "Process"})
+            p = multiprocessing.Process(target=self.crawl, args=(link,), kwargs={"method": "Process"})
             processes.append(p)
         for p in processes: p.start()
         for p in processes: p.join()
@@ -600,7 +602,7 @@ class TestConcurrentExecution:
         # region：Timer：https://docs.python.org/zh-cn/3/library/threading.html#timer-objects
         interval = 0.1
         for link in self.links:
-            Timer(interval, self.crawl, args=(link,), kwargs={"method": "Timer"}).start()
+            threading.Timer(interval, self.crawl, args=(link,), kwargs={"method": "Timer"}).start()
         time.sleep(interval * len(self.links))
         # endregion
 
@@ -773,9 +775,7 @@ class TestConcurrentExecution:
 
         def test_pool(self):
             """ 工作进程池 """
-            import os
-            from multiprocessing import Pool
-            with Pool(processes=4) as pool:
+            with multiprocessing.Pool(processes=4) as pool:
                 assert pool.map(abs, range(10)) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
                 results = [pool.apply_async(os.getpid) for _ in range(1000)]
@@ -812,7 +812,10 @@ class TestNetworkingAndInterprocessCommunication:
             实现方式：
 
             1. 内置：asyncio + async def/await，基于事件循环机制
-            2. 第三方：greenlet（需显式切换）/gevent（自动调度）
+            2. 第三方：
+
+                1. `greenlet <https://pypi.org/project/greenlet/>`_：进程内并发编程的轻量级协程（需显式切换）
+                2. `gevent <https://pypi.org/project/gevent/>`_：基于协程的 Python 网络库，它使用 greenlet 在 libev 或 libuv 事件循环之上提供高级同步API（自动调度）
             """
 
             @staticmethod
@@ -867,7 +870,6 @@ class TestNetworkingAndInterprocessCommunication:
 # region 互联网数据处理：https://docs.python.org/zh-cn/3/library/netdata.html
 class TestInternetDataHandling:
     def test_json(self):
-        import json
         data = {"name": "张三", "age": 30, "skills": ["Python", "Data Science"]}
         # ensure_ascii  对非 ASCII 字符进行转义
         # sort_keys     按键排序
@@ -878,6 +880,30 @@ class TestInternetDataHandling:
             json.dump(data, f, ensure_ascii=False, indent=2)
             f.seek(0)
             assert json.load(f) == data
+
+
+# endregion
+# region 互联网协议和支持：https://docs.python.org/zh-cn/3/library/internet.html
+class TestInternetProtocolsAndSupport:
+    def test_urllib_parse(self):
+        """
+        `将 URL 解析为组件 <https://docs.python.org/zh-cn/3/library/urllib.parse.html>`_：
+            将统一资源定位符（URL）字符串拆分为不同部分（协议、网络位置、路径等），或将各个部分组合回 URL 字符串，并将“相对 URL”转换为基于给定的“基准 URL”的绝对 URL
+        """
+        from urllib.parse import quote, unquote, urlparse
+        # region urlparse
+        o = urlparse('http://docs.python.org:80/3/library/urllib.parse.html?highlight=params#url-parsing')
+        assert o.scheme == 'http'
+        assert o.netloc == 'docs.python.org:80'
+        assert o.hostname == 'docs.python.org'
+        assert o.port == 80
+        assert o.path == '/3/library/urllib.parse.html'
+        assert o.params == ''
+        assert o.query == 'highlight=params'
+        assert o.fragment == 'url-parsing'
+        # endregion
+        s = '爬虫'
+        assert unquote(quote(s)) == s
 
 
 # endregion
@@ -1635,4 +1661,72 @@ class TestClosureAndDecorator:
 
             assert register == ['DataProcessor']
             DataProcessor()
+
+
+# endregion
+# region packages：https://pypi.org/
+class TestPackages:
+    class TestRequests:
+        """
+        `requests <https://pypi.org/project/requests/>`_：HTTP 库
+        """
+
+        def test_basic(self):
+            r = requests.get('https://httpbin.org/basic-auth/user/pass', auth=('user', 'pass'))
+            assert r.status_code == 200
+            assert r.headers['content-type'] == 'application/json'
+            assert r.encoding == 'utf-8'
+            # 相应内容（字节）
+            assert r.content == b'{\n  "authenticated": true, \n  "user": "user"\n}\n'
+            assert r.text == r.content.decode(r.encoding) == '{\n  "authenticated": true, \n  "user": "user"\n}\n'
+            assert r.json() == json.loads(r.text) == {'authenticated': True, 'user': 'user'}
+
+        def test_user_agent(self):
+            """
+            `fake-useragent <https://pypi.org/project/fake-useragent/>`_：useragent faker
+            """
+            from fake_useragent import UserAgent
+            url = 'https://www.baidu.com'
+            r = requests.get(url)
+            # region 1. 自定义随机 User-Agent
+            user_agents = [
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
+                'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36'
+            ]
+            r2 = requests.get(url, headers={'User-Agent': random.choice(user_agents)})
+            assert len(r.content) < len(r2.content)
+            # endregion
+            # region 2. 使用 fake_useragent 随机 User-Agent
+            r3 = requests.get(url, headers={'User-Agent': UserAgent().random})
+            assert len(r.content) < len(r3.content)
+            # endregion
+
+        def test_advance(self):
+            from requests.adapters import HTTPAdapter
+            from urllib3 import Retry
+            # 会话
+            with requests.Session() as session:
+                # 连接池
+                adapter = HTTPAdapter(
+                    pool_connections=15,
+                    pool_maxsize=50,
+                    # 重试
+                    max_retries=Retry(total=3, backoff_factor=0.5)
+                )
+                session.mount("https://", adapter)
+                r = session.get(
+                    'https://2025.ip138.com/',
+                    headers={'User-Agent': UserAgent().random},
+                    # 代理：https://free.kuaidaili.com/free/dps/
+                    # proxies={"https": "180.121.147.240:20756"},
+                    timeout=2,
+                    allow_redirects=True
+                )
+                print(re.search(r'<title[^>]*>.*?(\d+(?:\.\d+)*)', r.text).group(1).strip())
+
+    def test_jsonpath(self):
+        """
+        `requests <https://pypi.org/project/requests/>`_：一个类似 XPath 的 JSON 工具
+        """
 # endregion
