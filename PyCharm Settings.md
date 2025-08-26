@@ -14,10 +14,18 @@
 ### pip
     pip install package_name
     pip install --upgrade package_name
+    pip show package_name
     pip uninstall package_name
     pip show package_name
     pip list
     pip freeze > requirements.txt
     pip install -r requirements.txt
     pip cache purge
+### pipdeptree
+    # 完整依赖树
+    pipdeptree
+    # 查看指定包的依赖
+    pipdeptree -p package_name
+    # 查看指定包被哪些依赖
+    pipdeptree -r -p package_name
 ---

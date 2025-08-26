@@ -1673,6 +1673,7 @@ class TestPackages:
 
         def test_basic(self):
             r = requests.get('https://httpbin.org/basic-auth/user/pass', auth=('user', 'pass'))
+            r.raise_for_status()
             assert r.status_code == 200
             assert r.headers['content-type'] == 'application/json'
             assert r.encoding == 'utf-8'
@@ -1725,8 +1726,29 @@ class TestPackages:
                 )
                 print(re.search(r'<title[^>]*>.*?(\d+(?:\.\d+)*)', r.text).group(1).strip())
 
-    def test_jsonpath(self):
+    def test_jsonpath_ng(self):
         """
-        `requests <https://pypi.org/project/requests/>`_：一个类似 XPath 的 JSON 工具
+        `requests <https://pypi.org/project/jsonpath-ng/>`_：JSONPath for Python 的最终实现
         """
+        from jsonpath_ng import parse
+        r = requests.get(
+            "https://reqres.in/api/users",
+            headers={'User-Agent': UserAgent().random, "x-api-key": "reqres-free-v1"}
+        )
+        titles = [match.value for match in parse('$.data[*].first_name').find(r.json())]
+        print(titles[:5])
+
+    def test_lxml(self):
+        """
+        `lxml <https://pypi.org/project/lxml/>`_：
+
+        1. 通过封装 C 库（libxml2/libxslt）提供强大的 XML/HTML 处理能力
+        2. 以符合 Python 习惯的 ElementTree API 形式暴露给开发者，兼顾安全性与易用性
+        3. 支持 XPath、RelaxNG、XML Schema、XSLT、C14N 等功能
+        """
+        from lxml import etree
+        r = requests.get("https://www.w3schools.com/xml/books.xml", headers={'User-Agent': UserAgent().random})
+        root = etree.XML(r.content)
+        assert (root.xpath('/bookstore/book[2]/author/text()'), 'J K. Rowling')
+        assert (root.xpath('/bookstore/book[2]/title/@lang/text()'), 'Harry Potter')
 # endregion
