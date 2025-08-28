@@ -8,11 +8,13 @@ import asyncio
 import builtins
 import datetime
 import inspect
+import io
 import json
 import multiprocessing
 import os
 import random
 import re
+import tempfile
 import threading
 import time
 from typing import Any
@@ -514,7 +516,6 @@ class TestFileAndDirectoryAccess:
         """
         `生成临时文件和目录 <https://docs.python.org/zh-cn/3/library/tempfile.html>`_
         """
-        import tempfile
         # 创建一个临时文件并向其写入一些数据
         buffer = b'Hello World!'
         with tempfile.TemporaryFile() as fp:
@@ -815,7 +816,7 @@ class TestNetworkingAndInterprocessCommunication:
             2. 第三方：
 
                 1. `greenlet <https://pypi.org/project/greenlet/>`_：进程内并发编程的轻量级协程（需显式切换）
-                2. `gevent <https://pypi.org/project/gevent/>`_：基于协程的 Python 网络库，它使用 greenlet 在 libev 或 libuv 事件循环之上提供高级同步API（自动调度）
+                2. `gevent <https://pypi.org/project/gevent/>`_：基于协程的网络库，它使用 greenlet 在 libev 或 libuv 事件循环之上提供高级同步API（自动调度）
             """
 
             @staticmethod
@@ -951,7 +952,7 @@ class TestGenericOperatingSystemServices:
             os.remove(new_file_path)
             os.rmdir(new_dir)
 
-    def test_io(self):
+    class TestIO:
         """
         三种 I/O 类型：
 
@@ -973,10 +974,19 @@ class TestGenericOperatingSystemServices:
             2. 底层设备交互；需精确控制 I/O 行为（实时系统、设备驱动程序）；零拷贝数据处理（内存映射、数据库页直接访问）；特殊存储需求（自定义文件系统、日志结构存储）；I/O 行为分析（基准测试、性能分析）
             3. `open("test.txt", "rb", buffering=0)`
         """
-        with open("test.txt", "r", encoding="utf-8") as f:
-            assert f.name == "test.txt"
-            assert f.mode == "r"
-            assert f.readline() == "静夜思\n"
+
+        def test_io(self):
+            with open("test.txt", "r", encoding="utf-8") as f:
+                assert f.name == "test.txt"
+                assert f.mode == "r"
+                assert f.readline() == "静夜思\n"
+
+        def test_bytesio(self):
+            """ BytesIO：使用内存字节缓冲区的二进制流 """
+            b = io.BytesIO(b"abcdef")
+            view = b.getbuffer()
+            view[2:4] = b"34"
+            assert view == b"ab34ef"
 
     def test_time(self):
         """
@@ -1728,7 +1738,7 @@ class TestPackages:
 
     def test_jsonpath_ng(self):
         """
-        `requests <https://pypi.org/project/jsonpath-ng/>`_：JSONPath for Python 的最终实现
+        `requests <https://pypi.org/project/jsonpath-ng/>`_
         """
         from jsonpath_ng import parse
         r = requests.get(
@@ -1743,7 +1753,7 @@ class TestPackages:
         `lxml <https://pypi.org/project/lxml/>`_：
 
         1. 通过封装 C 库（libxml2/libxslt）提供强大的 XML/HTML 处理能力
-        2. 以符合 Python 习惯的 ElementTree API 形式暴露给开发者，兼顾安全性与易用性
+        2. 以 ElementTree API（xml.etree.ElementTree） 形式暴露给开发者，兼顾安全性与易用性
         3. 支持 XPath、RelaxNG、XML Schema、XSLT、C14N 等功能
         """
         from lxml import etree
@@ -1751,4 +1761,64 @@ class TestPackages:
         root = etree.XML(r.content)
         assert (root.xpath('/bookstore/book[2]/author/text()'), 'J K. Rowling')
         assert (root.xpath('/bookstore/book[2]/title/@lang/text()'), 'Harry Potter')
+
+    def test_moviepy(self):
+        """
+        `MoviePy <https://pypi.org/project/moviepy/>`_：用于视频编辑：剪切、连接、插入标题、视频合成（也称为非线性编辑）、视频处理和创建自定义效果
+        """
+        from moviepy import AudioFileClip, VideoFileClip
+        ua = UserAgent()
+
+        def get_random_windows_ua():
+            for _ in range(100):
+                user_agent = ua.random
+                if 'Windows' in user_agent:
+                    return user_agent
+            return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+        url = 'https://www.bilibili.com/video/BV1D4411L7Qd/'
+        headers = {'User-Agent': get_random_windows_ua(), 'Referer': url}
+        r = requests.get(url, headers=headers)
+        audio_url = re.findall(r'"id":30216,"baseUrl":"(.*?)","base_url"', r.text)
+        video_url = re.findall(r'"id":16,"baseUrl":"(.*?)","base_url"', r.text)
+        audio_r = requests.get(audio_url[0], headers=headers)
+        video_r = requests.get(video_url[0], headers=headers)
+        temp_audio_path, temp_video_path = None, None
+        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_file:
+            temp_file.write(audio_r.content)
+            temp_audio_path = temp_file.name
+        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_file:
+            temp_file.write(video_r.content)
+            temp_video_path = temp_file.name
+        with AudioFileClip(temp_audio_path) as audio, VideoFileClip(temp_video_path) as video:
+            final_video = video.with_audio(audio)
+            final_video.write_videofile('video_audio.mp4', threads=os.cpu_count(), codec='libx264', audio_codec='aac',
+                                        preset='fast', ffmpeg_params=['-movflags', '+faststart'])
+
+    def test_pymysql(self):
+        """
+        `PyMySQL <https://pypi.org/project/PyMySQL/>`_
+        """
+        import pymysql
+        from pymysql import cursors
+        connection = pymysql.connect(host='43.136.102.115',
+                                     user='root',
+                                     password='Cesc123!',
+                                     database='epitome',
+                                     charset='utf8mb4',
+                                     cursorclass=cursors.DictCursor)
+        with connection:
+            with connection.cursor() as cursor:
+                sql = "INSERT INTO `demo` (`id`, `name`) VALUES (%s, %s)"
+                cursor.execute(sql, ('1', 'ljh'))
+            connection.commit()
+            with connection.cursor() as cursor:
+                sql = "SELECT `id`, `name` FROM `demo` WHERE `id`=%s"
+                cursor.execute(sql, 1)
+                result = cursor.fetchone()
+                print(result)
+            with connection.cursor() as cursor:
+                sql = "DELETE FROM `demo` WHERE id=%s"
+                cursor.execute(sql, 1)
+            connection.commit()
 # endregion
