@@ -1,0 +1,274 @@
+""" packages：https://pypi.org/ """
+import json
+import logging
+import os
+import random
+import re
+import tempfile
+
+import requests
+from fake_useragent import UserAgent
+from tenacity import retry, stop_after_attempt
+
+
+class TestRequests:
+    """
+    `requests <https://pypi.org/project/requests/>`_：HTTP 库
+    """
+
+    def test_basic(self):
+        r = requests.get('https://httpbin.org/basic-auth/user/pass', auth=('user', 'pass'))
+        r.raise_for_status()
+        assert r.status_code == 200
+        assert r.headers['content-type'] == 'application/json'
+        assert r.encoding == 'utf-8'
+        # 响应内容（字节）
+        assert r.content == b'{\n  "authenticated": true, \n  "user": "user"\n}\n'
+        assert r.text == r.content.decode(r.encoding) == '{\n  "authenticated": true, \n  "user": "user"\n}\n'
+        assert r.json() == json.loads(r.text) == {'authenticated': True, 'user': 'user'}
+
+    def test_advance(self):
+        from requests.adapters import HTTPAdapter
+        from urllib3 import Retry
+        # 会话
+        with requests.Session() as session:
+            # 连接池
+            adapter = HTTPAdapter(
+                pool_connections=15,
+                pool_maxsize=50,
+                # 重试
+                max_retries=Retry(total=3, backoff_factor=0.5)
+            )
+            session.mount("https://", adapter)
+            r = session.get(
+                'https://2025.ip138.com/',
+                headers={'User-Agent': UserAgent().random},
+                # 代理：https://free.kuaidaili.com/free/dps/
+                # proxies={"https": "180.121.147.240:20756"},
+                timeout=2,
+                allow_redirects=True
+            )
+            print(re.search(r'<title[^>]*>.*?(\d+(?:\.\d+)*)', r.text).group(1).strip())
+
+
+def test_user_agent():
+    """
+    `fake-useragent <https://pypi.org/project/fake-useragent/>`_：useragent faker
+    """
+    from fake_useragent import UserAgent
+    url = 'https://www.baidu.com'
+    r = requests.get(url)
+    # 1. 自定义随机 User-Agent
+    user_agents = [
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
+        'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36'
+    ]
+    r2 = requests.get(url, headers={'User-Agent': random.choice(user_agents)})
+    assert len(r.content) < len(r2.content)
+    # 2. 使用 fake_useragent 随机 User-Agent
+    r3 = requests.get(url, headers={'User-Agent': UserAgent().random})
+    assert len(r.content) < len(r3.content)
+
+
+class TestTenacity:
+    """
+    `tenacity <https://pypi.org/project/tenacity/>`_：多用途重试库
+    """
+
+    @staticmethod
+    def do_something():
+        if random.random() < 0.8:
+            print("失败")
+            raise Exception("异常")
+        else:
+            print("成功")
+
+    @staticmethod
+    def do_something2():
+        if random.random() < 0.7:
+            print("失败")
+            return False
+        else:
+            print("成功")
+            return True
+
+    def test_stop(self):
+        # stop_after_attempt：最多重试次数
+        from tenacity import stop_after_delay, stop_never, stop_any, stop_all
+        do_something = retry(stop=stop_after_attempt(10))(self.do_something)
+        do_something()
+        # stop_after_delay：最多重试总秒数
+        do_something = retry(stop=stop_after_delay(10))(self.do_something)
+        do_something()
+        # stop_never：重试直到成功；不设置 stop，效果等同于 stop_never
+        do_something = retry(stop=stop_never)(self.do_something)
+        do_something()
+        # stop_any
+        do_something = retry(stop=stop_any(stop_after_attempt(5), stop_after_delay(5)))(self.do_something)
+        do_something()
+        # stop_all
+        do_something = retry(stop=stop_all(stop_after_attempt(5), stop_after_delay(5)))(self.do_something)
+        do_something()
+
+    def test_wait(self):
+        from tenacity import wait_fixed, wait_random, wait_exponential, wait_random_exponential, wait_none
+        # wait_fixed：每次等待秒数
+        do_something = retry(wait=wait_fixed(1))(self.do_something)
+        do_something()
+        # wait_random：每次等待随机秒数
+        do_something = retry(wait=wait_random(1, 3))(self.do_something)
+        do_something()
+        # wait_exponential：指数退避，等待 multiplier*2^尝试次数，即依次等待 1 2 4 8 10 10 10 …
+        do_something = retry(wait=wait_exponential(1, 10))(self.do_something)
+        do_something()
+        # wait_random_exponential：等待 random()*multiplier*2^尝试次数
+        do_something = retry(wait=wait_random_exponential(2, 10))(self.do_something)
+        do_something()
+        # wait_none：不等待
+        do_something = retry(wait=wait_none())(self.do_something)
+        do_something()
+
+    def test_retry(self):
+        from tenacity import (retry_if_exception, retry_if_exception_type, retry_if_result, retry_if_exception_message,
+                              retry_any, retry_all)
+        # retry_if_exception_type：只对指定异常重试
+        do_something = retry(retry=retry_if_exception_type(Exception))(self.do_something)
+        do_something()
+        # retry_if_exception：抛出异常时执行 predicate，返回 True 重试
+        do_something = retry(retry=retry_if_exception(lambda e: type(e) is Exception))(self.do_something)
+        do_something()
+        # retry_if_result：有返回值时执行 predicate，返回 True 重试
+        do_something = retry(retry=retry_if_result(lambda res: res is False))(self.do_something2)
+        do_something()
+        # retry_if_exception_message：根据异常消息是否包含指定字符串决定是否重试
+        do_something = retry(retry=retry_if_exception_message(match="异常"))(self.do_something)
+        do_something()
+        # retry_any
+        do_something = retry(
+            retry=retry_any(retry_if_exception_type(Exception), retry_if_exception_message(match="异常"))
+        )(self.do_something)
+        do_something()
+        # retry_all
+        do_something = retry(
+            retry=retry_all(retry_if_exception_type(Exception), retry_if_exception_message(match="异常"))
+        )(self.do_something)
+        do_something()
+
+    def test_before_after(self):
+        """
+        before → 失败 → after → before_sleep → 等待 → …
+        """
+        from tenacity import before_sleep_log
+        def log_before(retry_state):
+            print(f"🟢 [before] 第{retry_state.attempt_number}次尝试")
+
+        def log_after(retry_state):
+            print(f"🔴 [after]  总耗时{retry_state.seconds_since_start}秒\n")
+
+        do_something = retry(
+            before=log_before, after=log_after, before_sleep=before_sleep_log(logging.getLogger(), logging.INFO)
+        )(self.do_something)
+        do_something()
+
+    def test_raise(self):
+        from tenacity import RetryError
+        # reraise=False，抛出 RetryError；reraise=True，抛出原始异常
+        do_something = retry(stop=stop_after_attempt(1), reraise=True)(self.do_something)
+        try:
+            do_something()
+        except RetryError:
+            print('RetryError')
+        except Exception:
+            print('Exception')
+
+
+def test_jsonpath_ng():
+    """
+    `requests <https://pypi.org/project/jsonpath-ng/>`_
+    """
+    from jsonpath_ng import parse
+    r = requests.get("https://reqres.in/api/users", headers={"x-api-key": "reqres-free-v1"})
+    titles = [match.value for match in parse('$.data[*].first_name').find(r.json())]
+    print(titles[:5])
+
+
+def test_lxml():
+    """
+    `lxml <https://pypi.org/project/lxml/>`_：
+
+    1. 通过封装 C 库（libxml2/libxslt）提供强大的 XML/HTML 处理能力
+    2. 以 ElementTree API（xml.etree.ElementTree） 形式暴露给开发者，兼顾安全性与易用性
+    3. 支持 XPath、RelaxNG、XML Schema、XSLT、C14N 等功能
+    """
+    from lxml import etree
+    r = requests.get("https://www.w3schools.com/xml/books.xml")
+    root = etree.XML(r.content)
+    assert (root.xpath('/bookstore/book[2]/author/text()'), 'J K. Rowling')
+    assert (root.xpath('/bookstore/book[2]/title/@lang/text()'), 'Harry Potter')
+
+
+def test_moviepy():
+    """
+    `MoviePy <https://pypi.org/project/moviepy/>`_：用于视频编辑：剪切、连接、插入标题、视频合成（也称为非线性编辑）、视频处理和创建自定义效果
+    """
+    from moviepy import AudioFileClip, VideoFileClip
+    ua = UserAgent()
+
+    def get_windows_ua():
+        return next((ua.random for _ in range(10) if 'Windows' in ua.random),
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+
+    url = 'https://www.bilibili.com/video/BV1D4411L7Qd/'
+    headers = {'User-Agent': get_windows_ua(), 'Referer': url}
+    r = requests.get(url, headers=headers)
+    audio_url = re.search(r'"id":30216,"baseUrl":"(.*?)","base_url"', r.text).group(1)
+    video_url = re.search(r'"id":16,"baseUrl":"(.*?)","base_url"', r.text).group(1)
+    audio_data = requests.get(audio_url, headers=headers).content
+    video_data = requests.get(video_url, headers=headers).content
+    with (tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_audio,
+          tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_video):
+        temp_audio.write(audio_data)
+        temp_video.write(video_data)
+        temp_audio_path, temp_video_path = temp_audio.name, temp_video.name
+    try:
+        with AudioFileClip(temp_audio_path) as audio, VideoFileClip(temp_video_path) as video:
+            video.with_audio(audio).write_videofile(
+                'video.mp4',
+                threads=os.cpu_count(),
+                codec='libx264',
+                audio_codec='aac',
+                preset='fast',
+                ffmpeg_params=['-movflags', '+faststart']
+            )
+    finally:
+        os.remove(temp_audio_path) if os.path.exists(temp_audio_path) else None
+        os.remove(temp_video_path) if os.path.exists(temp_video_path) else None
+
+
+def test_pymysql():
+    """
+    `PyMySQL <https://pypi.org/project/PyMySQL/>`_
+    """
+    import pymysql
+    from pymysql import cursors
+    connection = pymysql.connect(host='43.136.102.115',
+                                 user='root',
+                                 password='Cesc123!',
+                                 database='epitome',
+                                 charset='utf8mb4',
+                                 cursorclass=cursors.DictCursor)
+    with connection:
+        with connection.cursor() as cursor:
+            sql = "INSERT INTO `demo` (`id`, `name`) VALUES (%s, %s)"
+            cursor.execute(sql, ('1', 'ljh'))
+        connection.commit()
+        with connection.cursor() as cursor:
+            sql = "SELECT `id`, `name` FROM `demo` WHERE `id`=%s"
+            cursor.execute(sql, 1)
+            result = cursor.fetchone()
+            print(result)
+        with connection.cursor() as cursor:
+            sql = "DELETE FROM `demo` WHERE id=%s"
+            cursor.execute(sql, 1)
+        connection.commit()

@@ -5,23 +5,18 @@
 - JavaScript  弱类型动态语言
 """
 import asyncio
-import builtins
 import datetime
 import inspect
-import io
 import json
 import multiprocessing
 import os
 import random
 import re
-import tempfile
 import threading
 import time
 from typing import Any
 
 import pytest
-import requests
-from fake_useragent import UserAgent
 from loguru import logger
 
 
@@ -43,6 +38,7 @@ class TestBuiltinFunctions:
         print(id(1))
         # dir()：返回当前本地作用域的名称列表，或指定对象的有效属性列表
         # 不会列出内置函数和变量的名称
+        import builtins
         print(dir(builtins))
         # callable()：判断对象是否可调用；如果实例所属的类有 __call__() 方法则它就是可调用的
         assert callable(len) is True
@@ -517,6 +513,7 @@ class TestFileAndDirectoryAccess:
         `生成临时文件和目录 <https://docs.python.org/zh-cn/3/library/tempfile.html>`_
         """
         # 创建一个临时文件并向其写入一些数据
+        import tempfile
         buffer = b'Hello World!'
         with tempfile.TemporaryFile() as fp:
             fp.write(buffer)
@@ -921,13 +918,19 @@ class TestGenericOperatingSystemServices:
         """
 
         def test_os(self):
-            # 导入的操作系统相关模块的名称，'posix', 'nt', 'java'
+            # 导入的操作系统相关模块的名称：'posix', 'nt', 'java'
             assert os.name == 'nt'
             # 环境变量
             assert os.environ['OS'] == os.getenv('OS') == r'Windows_NT'
-            # 以系统分隔符拆分路径
-            print(f"当前进程 ID：{os.getpid()}")
-            print(f"父进程 ID：{os.getppid()}")
+            # 当前进程 ID，父进程 ID
+            print(os.getpid(), os.getppid())
+            # 逻辑 CPU 数量
+            assert os.cpu_count() == 12
+            # 操作系统用来分隔路径的字符：POSIX 是 '/'，WINDOWS 是 '\\'
+            assert os.sep == '\\'
+            assert os.altsep == '/'
+            # 分隔基本文件名和扩展名的字符
+            assert os.extsep == '.'
 
         def test_path_like(self):
             print(f"当前工作目录：{os.getcwd()}")
@@ -948,7 +951,7 @@ class TestGenericOperatingSystemServices:
             new_file_path = os.path.join(new_dir, "new_file.txt")
             # 重命名文件
             os.rename(file_path, new_file_path)
-            # 删除文件
+            # 删除文件，语义与 os.unlink() 相同
             os.remove(new_file_path)
             os.rmdir(new_dir)
 
@@ -983,7 +986,8 @@ class TestGenericOperatingSystemServices:
 
         def test_bytesio(self):
             """ BytesIO：使用内存字节缓冲区的二进制流 """
-            b = io.BytesIO(b"abcdef")
+            from io import BytesIO
+            b = BytesIO(b"abcdef")
             view = b.getbuffer()
             view[2:4] = b"34"
             assert view == b"ab34ef"
@@ -1671,154 +1675,4 @@ class TestClosureAndDecorator:
 
             assert register == ['DataProcessor']
             DataProcessor()
-
-
-# endregion
-# region packages：https://pypi.org/
-class TestPackages:
-    class TestRequests:
-        """
-        `requests <https://pypi.org/project/requests/>`_：HTTP 库
-        """
-
-        def test_basic(self):
-            r = requests.get('https://httpbin.org/basic-auth/user/pass', auth=('user', 'pass'))
-            r.raise_for_status()
-            assert r.status_code == 200
-            assert r.headers['content-type'] == 'application/json'
-            assert r.encoding == 'utf-8'
-            # 相应内容（字节）
-            assert r.content == b'{\n  "authenticated": true, \n  "user": "user"\n}\n'
-            assert r.text == r.content.decode(r.encoding) == '{\n  "authenticated": true, \n  "user": "user"\n}\n'
-            assert r.json() == json.loads(r.text) == {'authenticated': True, 'user': 'user'}
-
-        def test_user_agent(self):
-            """
-            `fake-useragent <https://pypi.org/project/fake-useragent/>`_：useragent faker
-            """
-            from fake_useragent import UserAgent
-            url = 'https://www.baidu.com'
-            r = requests.get(url)
-            # region 1. 自定义随机 User-Agent
-            user_agents = [
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
-                'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
-                'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36'
-            ]
-            r2 = requests.get(url, headers={'User-Agent': random.choice(user_agents)})
-            assert len(r.content) < len(r2.content)
-            # endregion
-            # region 2. 使用 fake_useragent 随机 User-Agent
-            r3 = requests.get(url, headers={'User-Agent': UserAgent().random})
-            assert len(r.content) < len(r3.content)
-            # endregion
-
-        def test_advance(self):
-            from requests.adapters import HTTPAdapter
-            from urllib3 import Retry
-            # 会话
-            with requests.Session() as session:
-                # 连接池
-                adapter = HTTPAdapter(
-                    pool_connections=15,
-                    pool_maxsize=50,
-                    # 重试
-                    max_retries=Retry(total=3, backoff_factor=0.5)
-                )
-                session.mount("https://", adapter)
-                r = session.get(
-                    'https://2025.ip138.com/',
-                    headers={'User-Agent': UserAgent().random},
-                    # 代理：https://free.kuaidaili.com/free/dps/
-                    # proxies={"https": "180.121.147.240:20756"},
-                    timeout=2,
-                    allow_redirects=True
-                )
-                print(re.search(r'<title[^>]*>.*?(\d+(?:\.\d+)*)', r.text).group(1).strip())
-
-    def test_jsonpath_ng(self):
-        """
-        `requests <https://pypi.org/project/jsonpath-ng/>`_
-        """
-        from jsonpath_ng import parse
-        r = requests.get(
-            "https://reqres.in/api/users",
-            headers={'User-Agent': UserAgent().random, "x-api-key": "reqres-free-v1"}
-        )
-        titles = [match.value for match in parse('$.data[*].first_name').find(r.json())]
-        print(titles[:5])
-
-    def test_lxml(self):
-        """
-        `lxml <https://pypi.org/project/lxml/>`_：
-
-        1. 通过封装 C 库（libxml2/libxslt）提供强大的 XML/HTML 处理能力
-        2. 以 ElementTree API（xml.etree.ElementTree） 形式暴露给开发者，兼顾安全性与易用性
-        3. 支持 XPath、RelaxNG、XML Schema、XSLT、C14N 等功能
-        """
-        from lxml import etree
-        r = requests.get("https://www.w3schools.com/xml/books.xml", headers={'User-Agent': UserAgent().random})
-        root = etree.XML(r.content)
-        assert (root.xpath('/bookstore/book[2]/author/text()'), 'J K. Rowling')
-        assert (root.xpath('/bookstore/book[2]/title/@lang/text()'), 'Harry Potter')
-
-    def test_moviepy(self):
-        """
-        `MoviePy <https://pypi.org/project/moviepy/>`_：用于视频编辑：剪切、连接、插入标题、视频合成（也称为非线性编辑）、视频处理和创建自定义效果
-        """
-        from moviepy import AudioFileClip, VideoFileClip
-        ua = UserAgent()
-
-        def get_random_windows_ua():
-            for _ in range(100):
-                user_agent = ua.random
-                if 'Windows' in user_agent:
-                    return user_agent
-            return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-
-        url = 'https://www.bilibili.com/video/BV1D4411L7Qd/'
-        headers = {'User-Agent': get_random_windows_ua(), 'Referer': url}
-        r = requests.get(url, headers=headers)
-        audio_url = re.findall(r'"id":30216,"baseUrl":"(.*?)","base_url"', r.text)
-        video_url = re.findall(r'"id":16,"baseUrl":"(.*?)","base_url"', r.text)
-        audio_r = requests.get(audio_url[0], headers=headers)
-        video_r = requests.get(video_url[0], headers=headers)
-        temp_audio_path, temp_video_path = None, None
-        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_file:
-            temp_file.write(audio_r.content)
-            temp_audio_path = temp_file.name
-        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_file:
-            temp_file.write(video_r.content)
-            temp_video_path = temp_file.name
-        with AudioFileClip(temp_audio_path) as audio, VideoFileClip(temp_video_path) as video:
-            final_video = video.with_audio(audio)
-            final_video.write_videofile('video_audio.mp4', threads=os.cpu_count(), codec='libx264', audio_codec='aac',
-                                        preset='fast', ffmpeg_params=['-movflags', '+faststart'])
-
-    def test_pymysql(self):
-        """
-        `PyMySQL <https://pypi.org/project/PyMySQL/>`_
-        """
-        import pymysql
-        from pymysql import cursors
-        connection = pymysql.connect(host='43.136.102.115',
-                                     user='root',
-                                     password='Cesc123!',
-                                     database='epitome',
-                                     charset='utf8mb4',
-                                     cursorclass=cursors.DictCursor)
-        with connection:
-            with connection.cursor() as cursor:
-                sql = "INSERT INTO `demo` (`id`, `name`) VALUES (%s, %s)"
-                cursor.execute(sql, ('1', 'ljh'))
-            connection.commit()
-            with connection.cursor() as cursor:
-                sql = "SELECT `id`, `name` FROM `demo` WHERE `id`=%s"
-                cursor.execute(sql, 1)
-                result = cursor.fetchone()
-                print(result)
-            with connection.cursor() as cursor:
-                sql = "DELETE FROM `demo` WHERE id=%s"
-                cursor.execute(sql, 1)
-            connection.commit()
 # endregion
