@@ -5,6 +5,7 @@ import os
 import random
 import re
 import tempfile
+import time
 
 import requests
 from fake_useragent import UserAgent
@@ -69,6 +70,52 @@ def test_user_agent():
     # 2. 使用 fake_useragent 随机 User-Agent
     r3 = requests.get(url, headers={'User-Agent': UserAgent().random})
     assert len(r.content) < len(r3.content)
+
+
+class TestSelenium:
+    """
+    `selenium <https://pypi.org/project/selenium/>`_：自动化 web 浏览器交互
+    """
+
+    def test_selenium(self):
+        from selenium import webdriver
+        from selenium.webdriver.chrome.service import Service
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as ec
+        options = webdriver.ChromeOptions()
+        # 不显示图形界面
+        # options.add_argument('headless')
+        service = Service(executable_path='chromedriver.exe')
+        driver = webdriver.Chrome(options=options, service=service)
+        driver.get('https://www.baidu.com')
+
+        print(driver.current_url)
+        print(driver.title)
+        # print(webdriver.page_source)
+        # 截图
+        driver.save_screenshot('baidu.png')
+        os.remove('baidu.png')
+        # region 搜索 selenium
+        chat_textarea = driver.find_element(By.ID, 'chat-textarea')
+        chat_textarea.send_keys('selenium')
+        chat_submit_button = driver.find_element(By.ID, 'chat-submit-button')
+        chat_submit_button.click()
+        # 等待直到，某元素可见
+        WebDriverWait(driver, 10).until(ec.visibility_of_element_located((By.ID, 'page')))
+        # endregion
+        # 通过执行 js 滚动到底部
+        driver.execute_script("window.scrollTo(0, document.documentElement.scrollHeight);")
+        time.sleep(1)
+        # 通过执行 js 打开一个窗口
+        driver.execute_script('window.open("https://www.sogou.com")')
+        # 所有窗口句柄
+        handles = driver.window_handles
+        # 切换窗口
+        driver.switch_to.window(handles[1])
+        time.sleep(1)
+        # 关闭浏览器并关闭 ChromeDriver
+        driver.quit()
 
 
 class TestTenacity:
