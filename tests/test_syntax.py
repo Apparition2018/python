@@ -12,6 +12,7 @@ import multiprocessing
 import os
 import random
 import re
+import shutil
 import threading
 import time
 from typing import Any
@@ -492,21 +493,30 @@ class TestFileAndDirectoryAccess:
         `常用的路径操作 <https://docs.python.org/zh-cn/3/library/os.path.html>`_
         """
         filepath = "./test.txt"
+        # 绝对路径
         abs_path = os.path.abspath(filepath)
-        print(f"绝对路径：{abs_path}")
+        assert abs_path == r'D:\Liang\git\python\tests\test.txt'
+        dirname = os.path.dirname(abs_path)
+        basename = os.path.basename(abs_path)
+        print(f"目录：{dirname}")
+        print(f"文件名：{basename}")
         print(f"是否为绝对路径：{os.path.isabs(abs_path)}")
         print(f"是否为文件：{os.path.isfile(abs_path)}")
         print(f"是否为目录：{os.path.isdir(abs_path)}")
         print(f"是否为已存在路径：{os.path.exists(abs_path)}")
         print(f"是否指向同一文件：{os.path.samefile(filepath, abs_path)}")
-        print(f"目录：{os.path.dirname(abs_path)}")
-        print(f"文件名：{os.path.basename(abs_path)}")
         print(f"文件大小：{os.path.getsize(abs_path)}")
         print(f"创建时间：{time.ctime(os.path.getctime(abs_path))}")
-        print(f"最后修改时间：{time.ctime(os.path.getatime(abs_path))}")
-        print(f"split 分离：{os.path.split(abs_path)}")
-        print(f"join 拼接：{os.path.join('home', 'user', 'documents', 'report.txt')}")
+        print(f"最后访问时间：{time.ctime(os.path.getatime(abs_path))}")
+        print(f"最后修改时间：{time.ctime(os.path.getmtime(abs_path))}")
         print(f"规范化路径：{os.path.normpath('././test.txt')}")
+        # split
+        assert os.path.split(abs_path) == (r'D:\Liang\git\python\tests', 'test.txt')
+        assert os.path.splitdrive(abs_path) == ('D:', r'\Liang\git\python\tests\test.txt')
+        assert os.path.splitroot(abs_path) == ('D:', '\\', r'Liang\git\python\tests\test.txt')
+        assert os.path.splitext(abs_path) == (r'D:\Liang\git\python\tests\test', '.txt')
+        # join
+        assert os.path.join(dirname, basename) == abs_path
 
     def test_tempfile(self):
         """
@@ -536,9 +546,9 @@ class TestFileAndDirectoryAccess:
 
         从 Python 3.8 开始，所有涉及文件拷贝的函数 (copyfile(), copy(), copy2(), copytree() 以及 move()) 将会使用平台专属的 "fast-copy" 系统调用以便更高效地拷贝文件
         """
-        import shutil
+        copy_dir = 'copy'
         # 递归复制目录树，忽略与提供模式匹配的文件和目录
-        shutil.copytree(".", "copy/", ignore=shutil.ignore_patterns('*.py', 'tmp*'))
+        shutil.copytree('.', copy_dir, ignore=shutil.ignore_patterns('*.py', 'tmp*'))
 
         # 自定义 ignore 函数，忽略所有目录
         def my_ignore(path, names):
@@ -546,9 +556,45 @@ class TestFileAndDirectoryAccess:
             return [name for name in names if os.path.isdir(os.path.join(path, name))]
 
         # dirs_exist_ok，默认 False，是否允许目标目录已存在
-        shutil.copytree(".", "copy/", ignore=my_ignore, dirs_exist_ok=True)
+        shutil.copytree('.', copy_dir, ignore=my_ignore, dirs_exist_ok=True)
+        # 归档（压缩）
+        shutil.make_archive('copy', 'zip', copy_dir)
+        os.remove('copy.zip')
         # 删除一个完整的目录树
-        shutil.rmtree("copy/", ignore_errors=True)
+        shutil.rmtree(copy_dir, ignore_errors=True)
+
+
+# endregion
+# region 数据压缩和归档：https://docs.python.org/zh-cn/3/library/archiving.html
+class TestDataCompressionAndArchiving:
+    def test_zipfile(self):
+        """ 操作 ZIP 归档文件 """
+        import zipfile
+        # 压缩
+        with zipfile.ZipFile('archive.zip', 'w') as z:
+            z.write('test.txt')
+            z.write('test.json')
+        # 解压
+        with zipfile.ZipFile('archive.zip', 'r') as z:
+            z.extractall('./archive')
+        os.remove('archive.zip')
+        shutil.rmtree('./archive')
+
+
+# endregion
+# region 加密服务：https://docs.python.org/zh-cn/3/library/crypto.html
+class TestCryptographicServices:
+    def test_hashlib(self):
+        """
+        `安全哈希和消息摘要 <https://docs.python.org/zh-cn/3/library/hashlib.html>`_
+        """
+        import hashlib
+        data = '123'.encode()
+        md1 = hashlib.new('md5', data)
+        md2 = hashlib.md5(data)
+        assert md1.hexdigest() == md2.hexdigest()
+        print(md1.digest())
+        print(md1.hexdigest())
 
 
 # endregion
@@ -879,6 +925,18 @@ class TestInternetDataHandling:
             f.seek(0)
             assert json.load(f) == data
 
+    def test_base64(self):
+        """
+        Base16, Base32, Base64, Base85 数据编码
+        """
+        import base64
+        data = '123'.encode()
+        # 加密
+        base64_str = base64.b64encode(data).decode()
+        print(base64_str)
+        # 解密
+        assert base64.b64decode(base64_str) == data
+
 
 # endregion
 # region 互联网协议和支持：https://docs.python.org/zh-cn/3/library/internet.html
@@ -926,15 +984,26 @@ class TestGenericOperatingSystemServices:
             print(os.getpid(), os.getppid())
             # 逻辑 CPU 数量
             assert os.cpu_count() == 12
-            # 操作系统用来分隔路径的字符：POSIX 是 '/'，WINDOWS 是 '\\'
+            # 分隔路径的字符：POSIX 是 '/'，WINDOWS 是 '\\'
             assert os.sep == '\\'
             assert os.altsep == '/'
+            # 分隔搜索路径的字符：POSIX 是 ':'，WINDOWS 是 ';'
+            assert os.pathsep == ';'
             # 分隔基本文件名和扩展名的字符
             assert os.extsep == '.'
+            # 分隔（终止）行的字符：POSIX 是 '\n'，WINDOWS 是 '\r\n'
+            assert os.linesep == '\r\n'
 
-        def test_path_like(self):
+        def test_files_and_directories(self):
             print(f"当前工作目录：{os.getcwd()}")
             print(f"目录下文件的名称：{os.listdir()}")
+            # 目录树生成器
+            for (dirpath, dirnames, filenames) in os.walk(os.getcwd()):
+                print(dirpath)
+                for dirname in dirnames: print(os.path.join(dirpath, dirname))
+                for filename in filenames: print(os.path.join(dirpath, filename))
+                print()
+
             new_dir = "test_dir"
             if not os.path.exists(new_dir):
                 # 创建目录
@@ -947,13 +1016,24 @@ class TestGenericOperatingSystemServices:
             os.makedirs(new_dir, exist_ok=True)
             file_path = os.path.join(new_dir, "empty.txt")
             # 创建一个文件
-            with open(file_path, "w"): pass
+            with open(file_path, "w"):
+                pass
             new_file_path = os.path.join(new_dir, "new_file.txt")
             # 重命名文件
             os.rename(file_path, new_file_path)
             # 删除文件，语义与 os.unlink() 相同
             os.remove(new_file_path)
-            os.rmdir(new_dir)
+            # 递归删除目录
+            os.removedirs(new_dir)
+
+        def test_process_management(self):
+            # 在子 shell 中执行操作系统命令
+            os.system('cmd')
+            os.system('regedit')
+            os.system('ping www.baidu.com')
+
+            # 使用已关联的应用程序打开文件
+            os.startfile('test.txt')
 
     class TestIO:
         """
