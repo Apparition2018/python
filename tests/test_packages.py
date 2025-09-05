@@ -4,7 +4,6 @@ import logging
 import os
 import random
 import re
-import tempfile
 import time
 
 import requests
@@ -259,6 +258,7 @@ def test_moviepy():
     """
     `MoviePy <https://pypi.org/project/moviepy/>`_：用于视频编辑：剪切、连接、插入标题、视频合成（也称为非线性编辑）、视频处理和创建自定义效果
     """
+    import tempfile
     from moviepy import AudioFileClip, VideoFileClip
     ua = UserAgent()
 
@@ -319,3 +319,65 @@ def test_pymysql():
             sql = "DELETE FROM `demo` WHERE id=%s"
             cursor.execute(sql, 1)
         connection.commit()
+
+
+class TestOpenpyxl:
+    """
+    `openpyxl <https://pypi.org/project/openpyxl/>`_：用于读取/写入Excel 2010 xlsx/xlsm/xltx/xltm文件
+    """
+    import openpyxl
+
+    def test_read(self):
+        workbook = self.openpyxl.load_workbook("test.xlsx")
+        # 工作表列表
+        assert workbook.sheetnames == [sheet.title for sheet in workbook]
+        # 工作表
+        assert workbook.active == workbook[workbook.sheetnames[0]]
+        worksheet = workbook.active
+        # (行数，列数)
+        assert (worksheet.max_row, worksheet.max_column) == (9, 3)
+        # 工作表切片
+        assert worksheet['A1:B2'] == ((worksheet['A1'], worksheet['B1']), (worksheet['A2'], worksheet['B2']))
+        # 行切片
+        assert worksheet['2:3'] == (worksheet[2], worksheet[3])
+        # 列切片
+        assert worksheet['C:D'] == (worksheet['C'], worksheet['D'])
+        # 单元格
+        assert worksheet['A'][0] == worksheet['A1'] == worksheet.cell(1, 1)
+        # 遍历工作表
+        for worksheet in workbook:
+            # 遍历行
+            for row in worksheet:
+                assert isinstance(row, tuple)
+                for cell in row:
+                    print(cell.coordinate, cell.row, cell.column, cell.value)
+            # 遍历行
+            for row in worksheet.iter_rows(min_row=1, max_row=2, min_col=1, max_col=2): pass
+            # 遍历列
+            for column in worksheet.columns: pass
+        # 十进制 ↔ 列字母
+        from openpyxl.utils import get_column_letter, column_index_from_string
+        assert (get_column_letter(100), column_index_from_string('CV')) == ('CV', 100)
+
+    def test_write(self):
+        from openpyxl.utils import get_column_letter
+        workbook = self.openpyxl.load_workbook("test.xlsx")
+        worksheet = workbook[workbook.sheetnames[1]]
+        # 设置工作表标题
+        worksheet.title = 'write'
+        for _ in range(worksheet.max_row + 1):
+            # 删除行
+            worksheet.delete_rows(1)
+        for row in range(1, 10):
+            # 在工作表底部追加一行值
+            worksheet.append([get_column_letter(col) + str(row) for col in range(1, 10)])
+        for col in range(1, 10):
+            row = 10
+            # 设置单元格
+            worksheet.cell(row, col, get_column_letter(col) + str(row))
+        # 删除工作表
+        workbook.remove(workbook[workbook.sheetnames[2]])
+        # 创建工作表
+        workbook.create_sheet('new', 2)
+        # 保存当前工作簿
+        workbook.save('test.xlsx')
