@@ -352,6 +352,8 @@ class TestOpenpyxl:
                 for cell in row:
                     print(cell.coordinate, cell.row, cell.column, cell.value)
             # 遍历行
+            for row in range(1, worksheet.max_row + 1): pass
+            # 遍历行
             for row in worksheet.iter_rows(min_row=1, max_row=2, min_col=1, max_col=2): pass
             # 遍历列
             for column in worksheet.columns: pass
@@ -361,6 +363,7 @@ class TestOpenpyxl:
 
     def test_write(self):
         from openpyxl.utils import get_column_letter
+        from openpyxl.styles import Font
         workbook = self.openpyxl.load_workbook("test.xlsx")
         worksheet = workbook[workbook.sheetnames[1]]
         # 设置工作表标题
@@ -370,11 +373,21 @@ class TestOpenpyxl:
             worksheet.delete_rows(1)
         for row in range(1, 10):
             # 在工作表底部追加一行值
-            worksheet.append([get_column_letter(col) + str(row) for col in range(1, 10)])
+            worksheet.append([f"{get_column_letter(col)}{row}" for col in range(1, 10)])
+            # 设置行高
+            worksheet.row_dimensions[row].height = 25
+            for col in range(1, 10):
+                # 设置列宽
+                if row == 1: worksheet.column_dimensions[get_column_letter(col)].width = 4.78
+                # 设置单元格字体
+                worksheet[f"{get_column_letter(col)}{row}"].font = Font(size=14, italic=True)
+        row = 10
         for col in range(1, 10):
-            row = 10
             # 设置单元格
-            worksheet.cell(row, col, get_column_letter(col) + str(row))
+            worksheet.cell(row, col, f"{get_column_letter(col)}{row}")
+        # 合并单元格
+        worksheet.merge_cells('A11:B12')
+        worksheet['A11'] = 'A11'
         # 删除工作表
         workbook.remove(workbook[workbook.sheetnames[2]])
         # 创建工作表
