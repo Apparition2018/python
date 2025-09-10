@@ -323,12 +323,13 @@ def test_pymysql():
 
 class TestOpenpyxl:
     """
-    `openpyxl <https://pypi.org/project/openpyxl/>`_：用于读取/写入Excel 2010 xlsx/xlsm/xltx/xltm文件
+    `openpyxl <https://pypi.org/project/openpyxl/>`_：用于读取/写入Excel 2010 xlsx/xlsm/xltx/xltm 文件
     """
     import openpyxl
+    FILENAME = 'test.xlsx'
 
     def test_read(self):
-        workbook = self.openpyxl.load_workbook("test.xlsx")
+        workbook = self.openpyxl.load_workbook(self.FILENAME)
         # 工作表列表
         assert workbook.sheetnames == [sheet.title for sheet in workbook]
         # 工作表
@@ -393,4 +394,76 @@ class TestOpenpyxl:
         # 创建工作表
         workbook.create_sheet('new', 2)
         # 保存当前工作簿
-        workbook.save('test.xlsx')
+        workbook.save(self.FILENAME)
+
+
+class TestPythonDocx:
+    """
+    `openpyxl <https://pypi.org/project/openpyxl/>`_：用于读取、创建和更新 Microsoft Word 2007+（.docx）文件
+    """
+    from docx import Document
+    FILENAME = 'test.docx'
+
+    def test_read(self):
+        from docx.enum.style import WD_STYLE_TYPE
+        doc = type(self).Document(self.FILENAME)
+        # 遍历段落
+        for paragraph in doc.paragraphs:
+            # 所有标题
+            if re.match(r'^Heading \d+$', paragraph.style.name): pass
+        # 遍历样式
+        for style in doc.styles:
+            if style.type == WD_STYLE_TYPE.PARAGRAPH:
+                # 所有标题
+                if re.match(r'^Heading \d+$', style.name): pass
+                # 所有正文
+                if style.name == 'Normal': pass
+
+    def test_write(self):
+        from io import BytesIO
+        from docx.enum.text import WD_BREAK
+        from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+        from docx.shared import Inches
+        from docx.shared import Pt
+        doc = type(self).Document(self.FILENAME)
+        body = doc.element.body
+        # 清空文档（段落、表格、浮动文本框；图片、分页符都是在段落内）
+        for e in list(body):
+            if not e.tag.endswith('}sectPr'):
+                body.remove(e)
+        # region 添加内容
+        # 添加标题（应用了 Heading \d 样式的段落）
+        doc.add_heading('一级标题', 1)
+        doc.add_heading('二级标题', 2)
+        doc.add_heading('三级标题', 3)
+        # 添加段落
+        p = doc.add_paragraph('正文')
+        # 间距
+        p.paragraph_format.space_before = Pt(6)
+        p.paragraph_format.space_after = Pt(6)
+        # 首行缩进
+        p.paragraph_format.first_line_indent = Pt(21)
+        p.add_run('普通')
+        p.add_run('加粗').bold = True
+        p.add_run('斜体').italic = True
+        # 插入段落
+        doc.paragraphs[3].insert_paragraph_before('插入')
+        doc.paragraphs[3].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        # 添加图片（在段落内）
+        img_bio = BytesIO(requests.get('https://i.imgs.ovh/2025/04/18/j9kHY.jpeg').content)
+        doc.add_picture(img_bio, width=Inches(1.25))
+        # 相当于
+        doc.add_paragraph().add_run().add_picture(img_bio, width=Inches(1.25))
+        # 水平居中
+        # 添加表格
+        rows = cols = 3
+        doc.add_table(rows, cols)
+        for i in range(rows):
+            for j in range(cols):
+                doc.tables[0].cell(i, j).paragraphs[0].add_run(str(i * cols + j + 1))
+        # 添加分页符（在段落内）
+        doc.add_page_break()
+        # 相当于
+        doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
+        # endregion
+        doc.save(self.FILENAME)
