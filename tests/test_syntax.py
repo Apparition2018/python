@@ -35,14 +35,16 @@ class TestReStructuredTextDocstringFormat:
 # region 内置函数：https://docs.python.org/zh-cn/3/library/functions.html
 class TestBuiltinFunctions:
     def test_builtin_function(self):
-        # id()：返回对象内存地址
-        print(id(1))
+        # callable()：判断对象是否可调用；如果实例所属的类有 __call__() 方法则它就是可调用的
+        assert callable(len) is True
         # dir()：返回当前本地作用域的名称列表，或指定对象的有效属性列表
         # 不会列出内置函数和变量的名称
         import builtins
         print(dir(builtins))
-        # callable()：判断对象是否可调用；如果实例所属的类有 __call__() 方法则它就是可调用的
-        assert callable(len) is True
+        # id()：返回对象内存地址
+        print(id(1))
+        # round()：将数字四舍五入到给定的精度
+        assert round(0.55, 1) == 0.6
 
     def test_print(self):
         print('广州', '深圳', '中山', sep=' ', end='\n')

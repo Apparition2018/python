@@ -421,11 +421,18 @@ class TestPythonDocx:
 
     def test_write(self):
         from io import BytesIO
+        from docx.enum.section import WD_ORIENTATION
         from docx.enum.text import WD_BREAK
         from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
         from docx.shared import Inches
         from docx.shared import Pt
         doc = type(self).Document(self.FILENAME)
+        section = doc.sections[0]
+        # 页面宽高
+        assert round(section.page_width.cm, 1) == 21.0
+        assert round(section.page_height.cm, 1) == 29.7
+        # 页面方向
+        assert section.orientation == WD_ORIENTATION.PORTRAIT
         body = doc.element.body
         # 清空文档（段落、表格、浮动文本框；图片、分页符都是在段落内）
         for e in list(body):
@@ -467,3 +474,48 @@ class TestPythonDocx:
         doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
         # endregion
         doc.save(self.FILENAME)
+
+
+def test_pandas():
+    """
+    `pandas <https://pypi.org/project/pandas/>`_：数据分析工具包
+
+    处理数据：避免遍历操作
+
+    1. 数学计算：dataframe['a'] * 2
+    2. 条件判断：numpy.where() 或 dataframe.loc[dataframe['a'] > 30, 'b']
+    3. 多条件：numpy.select()
+    4. 分组：groupby()
+    5. 复杂多级：apply()
+    """
+    import pandas as pd
+    filename = 'test.xlsx'
+    # 读取工作表，以下三行均表示读取第一个工作表
+    dataframe = pd.read_excel(filename)
+    dataframe = pd.read_excel(filename, sheet_name='read')
+    dataframe = pd.read_excel(filename, sheet_name=0)
+    dataframes = pd.read_excel(filename, sheet_name=['read', 2])
+    # 读取特定列
+    dataframe = pd.read_excel(filename, usecols=['caseid', 'data'])
+    dataframe = pd.read_excel(filename, usecols=[0, 2])
+    # 其它
+    dataframe = pd.read_excel(filename,
+                              # 跳过n行再读取n行
+                              skiprows=0, nrows=9,
+                              # 指定某列数据类型
+                              dtype={'caseid': int, 'excepted': str, 'data': str},
+                              # 将某些值识别为 NaN
+                              na_values=['无', '/', ''],
+                              # 自动解释日期列
+                              # parse_dates=['date'],
+                              # 指定日期格式
+                              # date_format='%Y-%m-%d'
+                              )
+    print(dataframe.info())
+    # 删除重复数据
+    dataframe.drop_duplicates()
+    # 遍历数据
+    for row in dataframe.itertuples():
+        print(f"Index: {row.Index}, caseid: {row.caseid}, excepted: {row.excepted}, data: {row.data}")
+    # 两种索引方式读取数据
+    assert dataframe.iloc[1, 0] == dataframe.loc[1, 'caseid'] == 1
