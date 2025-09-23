@@ -6,6 +6,7 @@ import random
 import re
 import time
 
+import pandas
 import requests
 from fake_useragent import UserAgent
 from tenacity import retry, stop_after_attempt
@@ -488,29 +489,29 @@ def test_pandas():
     4. 分组：groupby()
     5. 复杂多级：apply()
     """
-    import pandas as pd
     filename = 'test.xlsx'
     # 读取工作表，以下三行均表示读取第一个工作表
-    dataframe = pd.read_excel(filename)
-    dataframe = pd.read_excel(filename, sheet_name='read')
-    dataframe = pd.read_excel(filename, sheet_name=0)
-    dataframes = pd.read_excel(filename, sheet_name=['read', 2])
+    dataframe = pandas.read_excel(filename)
+    dataframe = pandas.read_excel(filename, sheet_name='read')
+    dataframe = pandas.read_excel(filename, sheet_name=0)
+    # 读取多个工作表
+    dataframes = pandas.read_excel(filename, sheet_name=['read', 2])
     # 读取特定列
-    dataframe = pd.read_excel(filename, usecols=['caseid', 'data'])
-    dataframe = pd.read_excel(filename, usecols=[0, 2])
+    dataframe = pandas.read_excel(filename, usecols=['caseid', 'data'])
+    dataframe = pandas.read_excel(filename, usecols=[0, 2])
     # 其它
-    dataframe = pd.read_excel(filename,
-                              # 跳过n行再读取n行
-                              skiprows=0, nrows=9,
-                              # 指定某列数据类型
-                              dtype={'caseid': int, 'excepted': str, 'data': str},
-                              # 将某些值识别为 NaN
-                              na_values=['无', '/', ''],
-                              # 自动解释日期列
-                              # parse_dates=['date'],
-                              # 指定日期格式
-                              # date_format='%Y-%m-%d'
-                              )
+    dataframe = pandas.read_excel(filename,
+                                  # 跳过n行再读取n行
+                                  skiprows=0, nrows=9,
+                                  # 指定某列数据类型
+                                  dtype={'caseid': int, 'excepted': str, 'data': str},
+                                  # 将某些值识别为 NaN
+                                  na_values=['无', '/', ''],
+                                  # 自动解释日期列
+                                  # parse_dates=['date'],
+                                  # 指定日期格式
+                                  # date_format='%Y-%m-%d'
+                                  )
     print(dataframe.info())
     # 删除重复数据
     dataframe.drop_duplicates()
@@ -518,4 +519,22 @@ def test_pandas():
     for row in dataframe.itertuples():
         print(f"Index: {row.Index}, caseid: {row.caseid}, excepted: {row.excepted}, data: {row.data}")
     # 两种索引方式读取数据
-    assert dataframe.iloc[1, 0] == dataframe.loc[1, 'caseid'] == 1
+    assert dataframe.iloc[0, 0] == dataframe.loc[0, 'caseid'] == 1
+    # 写入 csv 文件
+    dataframe.to_csv('test.csv', encoding='utf-8')
+    # 写入 Excel 工作表
+    dataframe.to_excel('test2.xlsx')
+    os.remove('test.csv')
+    os.remove('test2.xlsx')
+
+
+def test_pdfplumber():
+    """
+    `pdfplumber <https://pypi.org/project/pdfplumber/>`_：获取 PDF 每个 char、rectangle、line 的信息
+    """
+    import pdfplumber
+    with pdfplumber.open('test.pdf') as pdf:
+        for page in pdf.pages:
+            print(page.extract_text)
+            for table in page.extract_tables():
+                print(table)
