@@ -13,6 +13,7 @@ import os
 import random
 import re
 import shutil
+import tempfile
 import threading
 import time
 from typing import Any
@@ -525,7 +526,6 @@ class TestFileAndDirectoryAccess:
         `生成临时文件和目录 <https://docs.python.org/zh-cn/3/library/tempfile.html>`_
         """
         # 创建一个临时文件并向其写入一些数据
-        import tempfile
         buffer = b'Hello World!'
         with tempfile.TemporaryFile() as fp:
             fp.write(buffer)
@@ -539,8 +539,8 @@ class TestFileAndDirectoryAccess:
             with open(fp.name, mode='rb') as f:
                 f.read()
         # 创建一个临时目录
-        with tempfile.TemporaryDirectory() as tmp_dir_name:
-            print(tmp_dir_name)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            print(tmpdir)
 
     def test_shutil(self):
         """
@@ -572,15 +572,15 @@ class TestDataCompressionAndArchiving:
     def test_zipfile(self):
         """ 操作 ZIP 归档文件 """
         import zipfile
-        # 压缩
-        with zipfile.ZipFile('archive.zip', 'w') as z:
-            z.write('test.txt')
-            z.write('test.json')
-        # 解压
-        with zipfile.ZipFile('archive.zip', 'r') as z:
-            z.extractall('./archive')
-        os.remove('archive.zip')
-        shutil.rmtree('./archive')
+        with tempfile.TemporaryDirectory() as tmpdir:
+            archive_zip = f'{tmpdir}/archive.zip'
+            # 压缩
+            with zipfile.ZipFile(archive_zip, 'w') as z:
+                z.write('test.txt')
+                z.write('test.json')
+            # 解压
+            with zipfile.ZipFile(archive_zip, 'r') as z:
+                z.extractall(f'{tmpdir}/archive')
 
 
 # endregion

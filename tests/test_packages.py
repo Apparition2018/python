@@ -4,6 +4,7 @@ import logging
 import os
 import random
 import re
+import tempfile
 import time
 
 import pandas
@@ -94,8 +95,8 @@ class TestSelenium:
         print(driver.title)
         # print(webdriver.page_source)
         # 截图
-        driver.save_screenshot('baidu.png')
-        os.remove('baidu.png')
+        with tempfile.NamedTemporaryFile() as fp:
+            driver.save_screenshot(fp.name)
         # region 搜索 selenium
         chat_textarea = driver.find_element(By.ID, 'chat-textarea')
         chat_textarea.send_keys('selenium')
@@ -520,12 +521,11 @@ def test_pandas():
         print(f"Index: {row.Index}, caseid: {row.caseid}, excepted: {row.excepted}, data: {row.data}")
     # 两种索引方式读取数据
     assert dataframe.iloc[0, 0] == dataframe.loc[0, 'caseid'] == 1
-    # 写入 csv 文件
-    dataframe.to_csv('test.csv', encoding='utf-8')
-    # 写入 Excel 工作表
-    dataframe.to_excel('test2.xlsx')
-    os.remove('test.csv')
-    os.remove('test2.xlsx')
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # 写入 csv 文件
+        dataframe.to_csv(f'{tmpdir}/test.csv', encoding='utf-8')
+        # 写入 Excel 工作表
+        dataframe.to_excel(f'{tmpdir}/test2.xlsx')
 
 
 def test_pdfplumber():
@@ -538,3 +538,97 @@ def test_pdfplumber():
             print(page.extract_text)
             for table in page.extract_tables():
                 print(table)
+
+
+def test_pypdf():
+    """
+    `pypdf <https://pypi.org/project/pypdf/>`_：拆分、合并、裁剪和转换 PDF 文件
+    """
+    from pypdf import PdfReader, PdfWriter
+    pwd = '123456'
+    reader = PdfReader('test.pdf')
+    # 取消密码
+    reader.decrypt(pwd)
+    # watermark_page = PdfReader('watermark.pdf').get_page(0)
+    with tempfile.TemporaryFile() as fp:
+        writer = PdfWriter()
+        # 设置密码
+        writer.encrypt(pwd)
+        for i, page in enumerate(reader.pages):
+            # 给每一页合并水印
+            # page.merge_page(watermark_page)
+            writer.add_page(page)
+        writer.write(fp)
+
+
+class TestPPTX:
+    """
+    `python-pptx <https://pypi.org/project/python-pptx/>`_：创建、读取和更新 PowerPoint (.pptx) 文件
+    """
+    from pptx import Presentation
+    FILENAME = "test.pptx"
+
+    def test_read(self):
+        # 读取演示文稿
+        p = type(self).Presentation(self.FILENAME)
+        # 遍历幻灯片
+        for slide in p.slides:
+            # 遍历 shapes
+            for shape in slide.shapes:
+                if shape.has_text_frame:
+                    for paragraph in shape.text_frame.paragraphs:
+                        print(paragraph.text)
+                if shape.is_placeholder:
+                    print(f'名称：{shape.name}，索引：{shape.placeholder_format.idx}，类型：{shape.placeholder_format.type}')
+
+    def test_write(self):
+        from pptx.chart.data import ChartData
+        from pptx.dml.color import RGBColor
+        from pptx.enum.chart import XL_CHART_TYPE, XL_DATA_LABEL_POSITION
+        from pptx.enum.text import MSO_VERTICAL_ANCHOR, MSO_AUTO_SIZE
+        from pptx.util import Cm, Pt
+        # 新建演示文稿
+        p = type(self).Presentation()
+        # 添加幻灯片，使用布局索引为 0 的版式
+        # slide_layouts 是一个包含 11 种默认版式的列表
+        slide = p.slides.add_slide(p.slide_layouts[0])
+        # 遍历 shapes，找到类型为 TITLE 的第一个 is_placeholder 设置文本
+        slide.shapes.title.text_frame.text = 'Title'
+        # 设置第二个 placeholder 的文本
+        slide.placeholders[1].text = 'Placeholder'
+        # 获取第二个 placeholder 的 text_frame
+        text_frame = slide.placeholders[1].text_frame
+        # 添加一个段落到 text_frame，并设置其层级为 1
+        paragraph = text_frame.add_paragraph()
+        paragraph.text = 'Paragraph'
+        paragraph.level = 1
+        # 添加一个新段落到 text_frame，并设置其层级为 2
+        paragraph2 = text_frame.add_paragraph()
+        paragraph2.text = 'Paragraph2'
+        paragraph2.level = 2
+        # 添加一个 run 到 paragraph
+        run = paragraph2.add_run()
+        run.text = 'Run'
+        run.font.size = Pt(18)
+        # 添加一个 textbox
+        textbox = slide.shapes.add_textbox(left=Cm(1), top=Cm(1), width=Cm(2.5), height=Cm(1))
+        textbox.text_frame.text = 'Textbox'
+        textbox.text_frame.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
+        textbox.text_frame.auto_size = MSO_AUTO_SIZE.SHAPE_TO_FIT_TEXT
+        textbox.fill.solid()
+        textbox.fill.fore_color.rgb = RGBColor(100, 100, 100)
+        textbox.line.color.rgb = RGBColor(0, 0, 0)
+        textbox.line.width = Cm(0.1)
+        # 添加一个 table
+        table = slide.shapes.add_table(rows=3, cols=4, left=Cm(5), top=Cm(1), width=Cm(6), height=Cm(4.5)).table
+        # 添加一个 chart
+        chart_data = ChartData()
+        chart_data.categories = ['1', '2', '3', '4']
+        chart_data.add_series(name='销量', values=[5676, 4563, 7656, 8685])
+        chart_data.add_series(name='金额', values=[3246, 2436, 6343, 3565])
+        chart = slide.shapes.add_chart(chart_type=XL_CHART_TYPE.BAR_CLUSTERED, x=Cm(12), y=Cm(1), cx=Cm(12), cy=Cm(6),
+                                       chart_data=chart_data).chart
+        chart.plots[0].has_data_labels = True
+        chart.plots[0].data_labels.number_format = '#,#'
+        chart.plots[0].data_labels.position = XL_DATA_LABEL_POSITION.INSIDE_END
+        p.save(self.FILENAME)
