@@ -401,7 +401,7 @@ class TestOpenpyxl:
 
 class TestPythonDocx:
     """
-    `openpyxl <https://pypi.org/project/openpyxl/>`_：用于读取、创建和更新 Microsoft Word 2007+（.docx）文件
+    `openpyxl <https://pypi.org/project/python-docx/>`_：用于读取、创建和更新 Microsoft Word 2007+（.docx）文件
     """
     from docx import Document
     FILENAME = 'test.docx'
