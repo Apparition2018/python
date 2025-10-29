@@ -233,7 +233,7 @@ class TestTenacity:
 
 def test_jsonpath_ng():
     """
-    `requests <https://pypi.org/project/jsonpath-ng/>`_
+    `jsonpath-ng <https://pypi.org/project/jsonpath-ng/>`_
     """
     from jsonpath_ng import parse
     r = requests.get("https://reqres.in/api/users", headers={"x-api-key": "reqres-free-v1"})
@@ -258,7 +258,7 @@ def test_lxml():
 
 def test_moviepy():
     """
-    `MoviePy <https://pypi.org/project/moviepy/>`_：用于视频编辑：剪切、连接、插入标题、视频合成（也称为非线性编辑）、视频处理和创建自定义效果
+    `moviepy <https://pypi.org/project/moviepy/>`_：用于视频编辑：剪切、连接、插入标题、视频合成（也称为非线性编辑）、视频处理和创建自定义效果
     """
     import tempfile
     from moviepy import AudioFileClip, VideoFileClip
@@ -401,7 +401,7 @@ class TestOpenpyxl:
 
 class TestPythonDocx:
     """
-    `openpyxl <https://pypi.org/project/openpyxl/>`_：用于读取、创建和更新 Microsoft Word 2007+（.docx）文件
+    `python-docx <https://pypi.org/project/python-docx/>`_：用于读取、创建和更新 Microsoft Word 2007+（.docx）文件
     """
     from docx import Document
     FILENAME = 'test.docx'
