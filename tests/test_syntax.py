@@ -489,7 +489,7 @@ class TestFileAndDirectoryAccess:
         # 遍历目录下文件
         for _ in p.iterdir(): pass
         # / 操作符可以创建子路径，如 os.path.join()
-        p / 'test.txt'
+        assert p / 'test.txt' == Path('./test.txt')
 
     def test_os_path(self):
         """
@@ -1205,11 +1205,12 @@ class TestPythonRuntimeServices:
                 '(self, name: str, *, id: Any = None, interest: list[int] = <factory>, birth_year: dataclasses.InitVar[int | None] = None, age: int = 0) -> None')
         p1 = P('A', id=0, birth_year=1999)
         p2 = P('B', id=1, birth_year=2001)
+        age = time.localtime().tm_year - 1999
         assert id(p1.interest) != id(p2.interest)
         # 将数据类对象转换为字典（使用工厂函数 dict_factory）
-        assert asdict(p1) == {'id': 0, 'name': 'A', 'interest': [], 'age': 26}
+        assert asdict(p1) == {'id': 0, 'name': 'A', 'interest': [], 'age': age}
         # 将数据类对象转换为元组（使用工厂函数 tuple_factory）
-        assert astuple(p1) == (0, 'A', [], 26)
+        assert astuple(p1) == (0, 'A', [], age)
         # 判断是否是 dataclass 或其实例
         assert is_dataclass(p1)
         # 判断是否为 dataclass 的实例
