@@ -5,7 +5,7 @@ import numpy as np
 class TestArrayObjects:
     def test_built_in_scalar_types(self):
         """
-        `Built-in scalar types <https://numpy.org/doc/stable/reference/arrays.scalars.html#built-in-scalar-types>`_：内置标量类型
+        `内置标量类型 <https://numpy.org/doc/stable/reference/arrays.scalars.html#built-in-scalar-types>`_
         """
         # generic：numpy 标量类型的基类
         assert np.generic.__mro__ == (np.generic, object)
@@ -84,8 +84,7 @@ class TestArrayObjects:
 
     class TestDataTypeObjects:
         """
-        `Data type objects <https://numpy.org/doc/stable/reference/arrays.dtypes.html>`_：
-            数据类型对象，描述了以下方面：
+        `数据类型对象 <https://numpy.org/doc/stable/reference/arrays.dtypes.html>`_：
 
         1. 数据的类型
         2. 数据的大小
@@ -155,8 +154,107 @@ class TestArrayObjects:
             assert a.dtype == 'float64'
             assert a.dtype == 'd'
 
-    def test_ndarray(self):
+    class TestNdarray:
         """
-        `The N-dimensional array <https://numpy.org/doc/stable/reference/arrays.ndarray.html>`_：N 维数组，元素类型相同
+        `N 维数组 <https://numpy.org/doc/stable/reference/arrays.ndarray.html>`_：
+            一个多维容器，其中包含相同的类型和大小的项目
         """
+
+        class TestConstructingArrays:
+            """ 构建数组 """
+
+            class TestArrayCreationRoutines:
+                """
+                `数组创建例程 <https://numpy.org/doc/stable/reference/routines.array-creation.html#routines-array-creation>`_：
+                """
+                def test_from_existing_data(self):
+                    original = np.array([1, 2, 3])
+
+                    # array(object[, dtype, copy, order, subok, ndmin, ...])
+                    # 输入已是 ndarray 时，创建新的副本
+                    assert np.array(original) is not original
+
+                    # asarray(a[, dtype, order, device, copy, like])
+                    # 输入已是 ndarray 时，直接返回原对象
+                    assert np.asarray(original) is original
+
+                    # frombuffer(buffer[, dtype, count, offset, like])
+                    # 将 buffer 解释为一维数组
+                    assert np.array_equal(np.frombuffer(b'banana', dtype='S1'), [b'b', b'a', b'n', b'a', b'n', b'a'])
+
+                    # fromiter(iter, dtype[, count, like])
+                    # 从 iterable 中创建一维数组
+                    assert np.array_equal(np.fromiter([1, 2, 3], dtype=int), [1, 2, 3])
+
+                def test_from_shape_or_value(self):
+                    # empty(shape[, dtype, order, device, like])
+                    # 返回一个给定形状和类型的新数组，不初始化条目
+                    assert not np.array_equal(np.empty((2, 2)), np.empty((2, 2)))
+
+                    # zeros(shape[, dtype, order, device, like])
+                    # 返回一个给定形状和类型的新数组，填充0
+                    assert np.array_equal(np.zeros((2, 2), dtype=int), [[0, 0], [0, 0]])
+
+                    # ones(shape[, dtype, order, device, like])
+                    # 返回一个给定形状和类型的新数组，填充1
+                    assert np.array_equal(np.ones((2, 2), dtype=int), [[1, 1], [1, 1]])
+
+                    # eye(N[, M, k, dtype, order, device, like])
+                    # 返回一个对角线为1，其余位置为0的二维数组
+                    assert np.array_equal(np.eye(3, dtype=int), [[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+
+                def test_numerical_ranges(self):
+                    # arange([start,] stop[, step,][, dtype, ...])
+                    assert np.array_equal(np.arange(3), [0, 1, 2])
+                    assert np.array_equal(np.arange(0, 3, 1), [0, 1, 2])
+
+                    # linspace(start, stop[, num, endpoint, ...])
+                    # 创建等差数列数组
+                    assert np.array_equal(np.linspace(1, 9, 5, dtype='i4'), [1, 3, 5, 7, 9])
+
+                    # logspace(start, stop[, num, endpoint, base, ...])
+                    # 创建等比数列数组，base 默认为 10
+                    assert np.array_equal(np.logspace(1, 3, 3, dtype='i4'), [10, pow(10, 2), pow(10, 3)])
+
+            def test_ndarray_constructor(self):
+                """ ndarray(shape[, dtype, buffer, offset, ...]) """
+
+    class TestDataTypePromotion:
+        """
+        `数据类型提升 <https://numpy.org/doc/stable/reference/arrays.promotion.html>`_：
+            一般提升路径：bool → int → float → complex → str / object
+        """
+# endregion
+
+# region 按主题分类的例程和对象：https://numpy.org/doc/stable/reference/routines.html
+class TestRoutinesAndObjectsByTopic:
+    class TestRandomSampling:
+        """
+        `随机抽样 <https://numpy.org/doc/stable/reference/random/index.html>`_
+        """
+
+        def test_legacy_generation(self):
+            """
+            `遗留生成器 <https://numpy.org/doc/stable/reference/random/legacy.html>`_
+            """
+            # 根据给定形状生成随机浮点数数组，元素范围[0, 1)
+            for d3 in np.random.rand(3, 2, 1):
+                for d2 in d3:
+                    for e in d2:
+                        assert 0 <= e < 1
+
+            # randint(low, high=None, size=None, dtype=None)
+            # 生成随机整数数组，元素范围[low, high)
+            for e in np.random.randint(0, 10, 5):
+                assert 0 <= e < 10
+
+            # 根据给定形状生成符合标准正态分布的随机浮点数数组，元素范围(-∞, +∞)
+            for e in np.random.randn(10):
+                assert -np.inf < e < np.inf
+
+            # normal(loc=0.0, scale=1.0, size=None)
+            # 根据给定形状生成任意正态分布的随机浮点数数组，元素范围(-∞, +∞)
+            for e in np.random.normal(0, 1, 10):
+                assert -np.inf < e < np.inf
+
 # endregion
