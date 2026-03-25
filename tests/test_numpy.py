@@ -1,5 +1,7 @@
 import numpy as np
 
+from src.utils.timer import Timer
+
 
 # region 数组对象：https://numpy.org/doc/stable/reference/arrays.html
 class TestArrayObjects:
@@ -162,7 +164,7 @@ class TestArrayObjects:
         """
 
         class TestConstructingArrays:
-            """ 构建数组 """
+            """构建数组"""
 
             class TestArrayCreationRoutines:
                 """
@@ -219,10 +221,12 @@ class TestArrayObjects:
                     assert np.array_equal(np.logspace(1, 3, 3, dtype='i4'), [10, pow(10, 2), pow(10, 3)])
 
             def test_ndarray_constructor(self):
-                """ ndarray(shape[, dtype, buffer, offset, ...]) """
+                """
+                ndarray(shape[, dtype, buffer, offset, ...])
+                """
 
         def test_attributes(self):
-            """ 属性 """
+            """属性"""
             arr = np.array([[1, 2, 3], [2, 3, 4]])
             # 维度数量
             assert arr.ndim == 2
@@ -247,27 +251,24 @@ class TestArrayObjects:
         class TestMethods:
             def test_shape_manipulation(self):
                 # reshape(shape)
-                assert np.array_equal(np.arange(4).reshape(2, 2), np.array([[0, 1], [2, 3]]))
+                assert np.array_equal(np.arange(9).reshape(3, 3), np.array([[0, 1, 2],
+                                                                            [3, 4, 5],
+                                                                            [6, 7, 8]]))
 
         def test_internal_memory_layout(self):
             """
-            内部内存布局
-
-            1. 连续的一维计算机内存片段
+            `内部内存布局 <https://numpy.org/doc/stable/reference/arrays.ndarray.html#internal-memory-layout-of-an-ndarray>`_：
+                连续的一维计算机内存片段
             """
-            import random, time
+            import random
 
             arr = [random.random() for _ in range(1000000)]
-            t1 = time.time()
-            sum(arr)
-            t2 = time.time()
+            t1, _ = Timer.measure(sum, arr)
 
             np_arr = np.array(arr)
-            t3 = time.time()
-            np.sum(np_arr)
-            t4 = time.time()
+            t2, _ = Timer.measure(np.sum, np_arr)
 
-            assert t2 - t1 > (t4 - t3) * 3
+            assert t1 > t2 * 3
 
     class TestDataTypePromotion:
         """
@@ -280,6 +281,32 @@ class TestArrayObjects:
 
 # region 按主题分类的例程和对象：https://numpy.org/doc/stable/reference/routines.html
 class TestRoutinesAndObjectsByTopic:
+    class TestMathematicalFunctions:
+        """
+        `数学函数 <https://numpy.org/doc/stable/reference/routines.math.html>`_
+        """
+
+        def test_sums_products_differences(self):
+            # sum(a[, axis, dtype, out, keepdims, ...])
+            # 对指定轴上的数组元素求和
+            x = np.array([[[0, 1],
+                           [2, 3],
+                           [4, 5]],
+                          [[6, 7],
+                           [8, 9],
+                           [10, 11]]])
+            assert x.sum() == 0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 == 66
+            assert np.array_equal(x.sum(0), [[0 + 6, 1 + 7],
+                                             [2 + 8, 3 + 9],
+                                             [4 + 10, 5 + 11]])
+            assert np.array_equal(x.sum(1), [[0 + 2 + 4, 1 + 3 + 5],
+                                             [6 + 8 + 10, 7 + 9 + 11]])
+            assert np.array_equal(x.sum(2), [[0 + 1, 2 + 3, 4 + 5],
+                                             [6 + 7, 8 + 9, 10 + 11]])
+            assert np.array_equal(x.sum(axis=(0, 1)), [(0 + 6) + (2 + 8) + (4 + 10), (1 + 7) + (3 + 9) + (5 + 11)])
+            assert np.array_equal(x.sum(axis=(1, 2)), [(0 + 2 + 4) + (1 + 3 + 5), (6 + 8 + 10) + (7 + 9 + 11)])
+            assert np.array_equal(x.sum(axis=(0, 2)), [(0 + 6) + (1 + 7), (2 + 8) + (3 + 9), (4 + 10) + (5 + 11)])
+
     class TestRandomSampling:
         """
         `随机抽样 <https://numpy.org/doc/stable/reference/random/index.html>`_
@@ -309,13 +336,145 @@ class TestRoutinesAndObjectsByTopic:
             for e in np.random.normal(0, 1, 10):
                 assert -np.inf < e < np.inf
 
+    class TestSortingSearchingAndCounting:
+
+        def test_searching(self):
+            # nonzero(a)
+            # 返回非零元素的索引
+            assert np.array_equal(np.nonzero([True, 0, False, 1])[0], [0, 3])
+
 
 # endregion
 
 # region NumPy 基础：https://numpy.org/doc/stable/user/basics.html
 class TestNumpyFundamentals:
-    def test_indexing_on_ndarray(self):
-        pass
+    class TestIndexingOnNdarray:
+        """
+        `索引 <https://numpy.org/doc/stable/user/basics.indexing.html>`_
+
+        `索引例程 <https://numpy.org/doc/stable/reference/routines.indexing.html>`_
+        """
+
+        class TestBasicIndexing:
+            """
+            `基本索引 <https://numpy.org/doc/stable/user/basics.indexing.html#basic-indexing>`_
+            """
+
+            def test_single_element_indexing(self):
+                """单元素索引"""
+                x = np.array([[0, 1, 2], [3, 4, 5]])
+                t1, _ = Timer.measure(lambda arr: [arr[0, 0] for _ in range(10_000)], x)
+                t2, _ = Timer.measure(lambda arr: [arr[0][0] for _ in range(10_000)], x)
+                # arr[0][0] 第一个索引创建了一个临时数组，所以效率更低
+                assert ('耗时：arr[0, 0] < arr[0][0]' ==
+                        f'耗时：arr[0, 0] {'<' if t1 < t2 else '=' if t1 == t2 else '>'} arr[0][0]')
+
+            def test_slicing_and_striding(self):
+                """
+                `切片和步长 <https://numpy.org/doc/stable/user/basics.indexing.html#slicing-and-striding>`_：
+
+                1. 基本切片 将 Python 的切片基本概念扩展到 N 维
+                2. 基本切片发生在 obj 是一个：
+
+                    1. slice object (start:stop:step)
+                    2. integer
+                    3. tuple：contains slice object or integer
+
+                3. 所有通过基本切片生成的数组都是原始数组的视图
+                """
+                x = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+                assert np.array_equal(x[1:7:2], [1, 3, 5])
+                assert np.array_equal(x[-3:4:-1], [7, 6, 5])
+
+                x = np.array([[[1], [2], [3]], [[4], [5], [6]]])
+                # : 表示全选。因为 start 默认为开头，stop 默认为结尾，step 默认为 1
+                assert np.array_equal(x[1:2], x[1:2, :, :])
+                assert np.array_equal(x[1:2], [[[4], [5], [6]]])
+
+            def test_dimensional_indexing_tools(self):
+                """维度索引工具"""
+                x = np.array([[[1], [2], [3]], [[4], [5], [6]]])
+
+                # Ellipsis ...：表示插入足够多的 :（全选）
+                assert np.array_equal(x[..., 0], x[:, :, 0])
+                assert np.array_equal(x[..., 0], [[1, 2, 3], [4, 5, 6]])
+
+                # np.newaxis (None)：插入一个长度为1的新维度
+                assert x.shape == (2, 3, 1)
+                assert x[:, np.newaxis, :, :].shape == (2, 1, 3, 1)
+                # np.newaxis+广播
+                y = np.array([0, 1, 2, 3, 4])
+                a = y[:, np.newaxis]
+                b = y[np.newaxis, :]
+                assert np.array_equal(a, [[0], [1], [2], [3], [4]])
+                assert np.array_equal(b, [[0, 1, 2, 3, 4]])
+                assert np.array_equal(a + b, [[0, 1, 2, 3, 4],
+                                              [1, 2, 3, 4, 5],
+                                              [2, 3, 4, 5, 6],
+                                              [3, 4, 5, 6, 7],
+                                              [4, 5, 6, 7, 8]])
+
+        class TestAdvancedIndexing:
+            """
+            `高级索引 <https://numpy.org/doc/stable/user/basics.indexing.html#advanced-indexing>`_
+
+            当选择对象是什么对象时，会触发高级索引：
+
+            1. 非元组序列对象
+            2. ndarray (integer/bool)
+            3. 至少包含一个序列对象或 ndarray (integer/bool) 的元组
+
+            高级索引始终返回数据的副本
+            """
+
+            def test_integer_array_indexing(self):
+                """整数数组索引"""
+                x = np.array([5, 4, 3, 2, 1])
+                assert np.array_equal(x[[1, 3, 3, 1]], [4, 2, 2, 4])
+                assert np.array_equal(x[np.array([1, 3, 3, 1])], [4, 2, 2, 4])
+
+                # 使用多维索引数组进行索引
+                y = np.array([[0, 1, 2, 3, 4],
+                              [5, 6, 7, 8, 9],
+                              [10, 11, 12, 13, 14],
+                              [15, 16, 17, 18, 19],
+                              [20, 21, 22, 23, 24]])
+                assert np.array_equal(y[[0, 2, 4], [0, 2, 4]], [y[0, 0], y[2, 2], y[4, 4]])
+                assert np.array_equal(y[[0, 2, 4], [0, 2, 4]], [0, 12, 24])
+                # 广播机制允许索引数组与其他索引的标量结合
+                assert np.array_equal(y[[0, 2, 4], 1], [1, 11, 21])
+
+                rows = [[0, 0], [3, 3]]
+                columns = [[0, 2], [0, 2]]
+                assert np.array_equal(y[rows, columns], [[y[0, 0], y[0, 2]], [y[3, 0], y[3, 2]]])
+                assert np.array_equal(y[rows, columns], [[0, 2], [15, 17]])
+                # 由于上述索引数组只是重复自身，可以使用广播（比较操作，例如 rows[:, np.newaxis] + columns）来简化
+                rows = np.array([0, 3])
+                columns = np.array([0, 2])
+                assert np.array_equal(rows[:, np.newaxis], [[0], [3]])
+                assert np.array_equal(y[rows[:, np.newaxis], columns], [[0, 2], [15, 17]])
+                # 这种广播也可以使用 ix_ 函数实现
+                assert np.array_equal(y[np.ix_(rows, columns)], [[0, 2], [15, 17]])
+
+            def test_boolean_array_indexing(self):
+                """布尔数组索引"""
+                x = np.array([[1, 2], [np.nan, 3], [np.nan, np.nan]])
+                assert np.array_equal(x[~np.isnan(x)], [1, 2, 3])
+
+                x = np.array([1, -1, -2, 3])
+                x[x < 0] += 20
+                assert np.array_equal(x, [1, 19, 18, 3])
+
+                x = np.array([[0, 1, 2],
+                              [3, 4, 5],
+                              [6, 7, 8]])
+                y = x > 2
+                assert np.array_equal(y, [[False, False, False],
+                                          [True, True, True],
+                                          [True, True, True]])
+                assert np.array_equal(y[:, 2], [False, True, True])
+                assert np.array_equal(x[y[:, 2]], [[3, 4, 5],
+                                                   [6, 7, 8]])
 
     def test_broadcasting(self):
         """

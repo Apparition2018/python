@@ -22,13 +22,14 @@ import pytest
 from loguru import logger
 
 
-# region reStructuredText Docstring Format
-class TestReStructuredTextDocstringFormat:
+# region Docstring
+class TestDocstring:
     """
-    reStructuredText Docstring Format
+    Docstring
 
-    1. `Specification <https://peps.python.org/pep-0287/#specification>`_
-    2. `Online editor <https://rsted.info.ucl.ac.be/>`_
+    1. `PEP 257 - Docstring Conventions <https://peps.python.org/pep-0257/>`_
+    2. `PEP 287 – reStructuredText Docstring Format <https://peps.python.org/pep-0287/>`_：
+        `Online editor <https://rsted.info.ucl.ac.be/>`_
     """
 
 
@@ -113,7 +114,9 @@ class TestBuiltinFunctions:
         assert eval(repr(p)) == p
 
     def test_type_conversion(self):
-        """ 类型转换：int(), float(), chr(), str(), tuple(), list(), set() """
+        """
+        类型转换：int(), float(), chr(), str(), tuple(), list(), set()
+        """
         assert int(1.8) == 1
         assert list('hello') == ['h', 'e', 'l', 'l', 'o']
         assert list({'name': 'ljh', 'age': 18}) == ['name', 'age']
@@ -158,7 +161,9 @@ class TestBuiltinFunctions:
         assert zip_len == min(len(indexes), len(letters), len(seasons))
 
     def test_map(self):
-        """ map(): 返回一个迭代器，该迭代器将函数应用于可迭代对象的每个项，从而产生结果 """
+        """
+        map(): 返回一个迭代器，该迭代器将函数应用于可迭代对象的每个项，从而产生结果
+        """
         assert list(map(lambda x: x * 2, [1, 2, 3])) == [2, 4, 6]
 
     def test_type(self):
@@ -570,7 +575,7 @@ class TestFileAndDirectoryAccess:
 # region 数据压缩和归档：https://docs.python.org/zh-cn/3/library/archiving.html
 class TestDataCompressionAndArchiving:
     def test_zipfile(self):
-        """ 操作 ZIP 归档文件 """
+        """操作 ZIP 归档文件"""
         import zipfile
         with tempfile.TemporaryDirectory() as tmpdir:
             archive_zip = f'{tmpdir}/archive.zip'
@@ -725,7 +730,7 @@ class TestConcurrentExecution:
                 logger.info(f"存款完成，新的余额: {self._balance}")
 
         def test_synchronization_objects(self):
-            """ 同步对象 """
+            """同步对象"""
             account = self.BankAccount()
             sync_methods = [
                 account.lock_deposit,
@@ -779,7 +784,7 @@ class TestConcurrentExecution:
             shared_list[index] = value
 
         def test_inter_process_communication(self):
-            """ 进程间通信 """
+            """进程间通信"""
             from multiprocessing import Process, Queue, Pipe, Value, Manager
 
             # region 1. Queue：生产者-消费者
@@ -820,7 +825,7 @@ class TestConcurrentExecution:
             # endregion
 
         def test_pool(self):
-            """ 工作进程池 """
+            """工作进程池"""
             with multiprocessing.Pool(processes=4) as pool:
                 assert pool.map(abs, range(10)) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
@@ -1067,7 +1072,9 @@ class TestGenericOperatingSystemServices:
                 assert f.readline() == "静夜思\n"
 
         def test_bytesio(self):
-            """ BytesIO：使用内存字节缓冲区的二进制流 """
+            """
+            BytesIO：使用内存字节缓冲区的二进制流
+            """
             from io import BytesIO
             b = BytesIO(b"abcdef")
             view = b.getbuffer()
@@ -1278,7 +1285,7 @@ class TestDataModel:
                 assert Singleton() == Singleton()
 
         class TestCustomizingAttributeAccess:
-            """ 自定义属性访问 """
+            """自定义属性访问"""
 
             def test_slots(self):
                 """
@@ -1389,7 +1396,7 @@ class TestSimpleStatements:
 
     def test_global_nonlocal_statement(self):
         """
-        global 语句
+        `global 语句 <https://docs.python.org/zh-cn/3/reference/simple_stmts.html#the-global-statement>`-：
 
         1. 使标识符被解释为全局变量
         2. 给全局变量赋值，必须使用 global
@@ -1399,7 +1406,7 @@ class TestSimpleStatements:
             2. 每个交互式命令
             3. 每个传递给 exec/eval/compile 的参数
 
-        nonlocal 语句
+        `nonlocal 语句 <https://docs.python.org/zh-cn/3/reference/simple_stmts.html#the-nonlocal-statement>`_：
 
         1. 使标识符引用先前在非局部作用域中绑定的名称
         2. 如果名称在多个非局部作用域中绑定，则使用最近的一个绑定
@@ -1411,13 +1418,16 @@ class TestSimpleStatements:
                 spam = 'local spam'
 
             def do_nonlocal():
+                # 使用外层函数的 spam
                 nonlocal spam
                 spam = 'nonlocal spam'
 
             def do_global():
+                # 使用全局作用域中的 spam
                 global spam
                 spam = 'global spam'
 
+            # 在 scope_test 局部作用域
             spam = 'test spam'
             do_local()
             assert spam == 'test spam'
@@ -1425,9 +1435,11 @@ class TestSimpleStatements:
             assert spam == 'nonlocal spam'
             do_global()
             assert spam == 'nonlocal spam'
+            # 返回实现当前模块命名空间的字典
+            assert globals()['spam'] == 'global spam'
 
         scope_test()
-        assert globals()['spam'] == 'global spam'
+        assert spam == 'global spam'
 
 
 # endregion
@@ -1562,7 +1574,7 @@ class TestInputAndOutput:
 # region 错误和异常：https://docs.python.org/zh-cn/3/tutorial/errors.html
 class TestErrorsAndExceptions:
     def test_handling_exceptions(self):
-        """ 异常的处理 """
+        """异常的处理"""
         try:
             x = int('a')
         except Exception as err:
@@ -1575,7 +1587,7 @@ class TestErrorsAndExceptions:
             print('Goodbye, world!')
 
     def test_raising_exceptions(self):
-        """ 触发异常 """
+        """触发异常"""
         try:
             # 主动触发异常
             raise NameError('HiThere')
