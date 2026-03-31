@@ -276,11 +276,106 @@ class TestArrayObjects:
             一般提升路径：bool → int → float → complex → str / object
         """
 
+    class TestIteratingOverArrays:
+        """
+        `迭代数组 <https://numpy.org/doc/stable/reference/arrays.nditer.html>`_：
 
-# endregion
+        `numpy.nditer <https://numpy.org/doc/stable/reference/generated/numpy.nditer.html#numpy-nditer>`_：
+        """
+
+        class TestSingleArrayIteration:
+            """单数组迭代"""
+            a = np.arange(6).reshape(2, 3)
+
+            def test_controlling_iteration_order(self):
+                """控制迭代顺序"""
+                # 内存顺序：默认，性能最佳
+                # 数组 a 和 a 转置的元素以相同的顺序被遍历
+                assert np.array_equal([x for x in np.nditer(self.a, order='K')],
+                                      [x for x in np.nditer(self.a.T, order='K')])
+                # C 顺序遍历：行优先
+                assert np.array_equal([x for x in np.nditer(self.a, order='C')], [0, 1, 2, 3, 4, 5])
+                # Fortran 顺序遍历：列优先
+                assert np.array_equal([x for x in np.nditer(self.a, order='F')], [0, 3, 1, 4, 2, 5])
+
+            def test_modifying_array_values(self):
+                """
+                修改数组值
+
+                1. 默认将输入操作数视为只读对象
+                2. 修改数组元素，必须使用每个数的 'readwrite' 或 ’writeonly' 标志
+                3. 必须在迭代结束后将缓冲数组复制回到原数组：①with 语句 ②close()
+                """
+                with np.nditer(self.a, op_flags=['readwrite']) as it:
+                    for x in it:
+                        x[...] = 2 * x
+                assert np.array_equal(self.a, [[0, 2, 4], [6, 8, 10]])
+
+            def test_external_loop_and_buffering(self):
+                """
+                external_loop
+
+                1. 不使用 external_loop：迭代器每次只返回一个元素
+                2. 使用 external_loop：迭代器尽可能多地收集内存连续的元素，打包成一个1维数组返回
+                """
+                assert np.array_equal(sum(1 for _ in np.nditer(self.a.T)), 6)
+                # 内存连续，只需遍历1次
+                assert np.array_equal(sum(1 for _ in np.nditer(self.a.T, flags=['external_loop'])), 1)
+                # 内存不连续，需要遍历6次
+                assert np.array_equal(sum(1 for _ in np.nditer(self.a.T, flags=['external_loop'], order='F')), 6)
+                # 启用缓冲，即使内存不连续，也只需遍历1次
+                assert np.array_equal(sum(1 for _ in np.nditer(self.a, flags=['external_loop', 'buffered'], order='F')), 1)
+
+            def test_tracking_index_or_multi_index(self):
+                """追踪索引或多索引"""
+                # c_index：追踪 C 顺序索引
+                it = np.nditer(self.a, flags=['c_index'])
+                assert np.array_equal([it.index for _ in it], [0, 1, 2, 3, 4, 5])
+                # f_index：追踪 Fortran 顺序索引
+                it = np.nditer(self.a, flags=['f_index'])
+                assert np.array_equal([it.index for _ in it], [0, 2, 4, 1, 3, 5])
+                # multi_index：追踪多索引
+                it = np.nditer(self.a, flags=['multi_index'])
+                assert np.array_equal([it.multi_index for _ in it], [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)])
+
+            def test_alternative_looping(self):
+                """替代循环"""
+                it = np.nditer(self.a, flags=['f_index'])
+                while not it.finished:
+                    it.iternext()
+
 
 # region 按主题分类的例程和对象：https://numpy.org/doc/stable/reference/routines.html
 class TestRoutinesAndObjectsByTopic:
+    class TestArrayManipulationRoutines:
+        """
+        `数组操作 <https://numpy.org/doc/stable/reference/routines.array-manipulation.html>`_
+        """
+
+        class TestTransposeLikeOperations:
+            """转置类操作"""
+
+            def test_t(self):
+                """
+                ndarray.T：返回转置数组视图
+                """
+                a = np.arange(6).reshape(2, 3)
+                assert np.array_equal(a.T, [[0, 3],
+                                            [1, 4],
+                                            [2, 5]])
+                # 对于一维数组不起作用
+                b = np.array([0, 1, 2])
+                assert np.array_equal(b.T, b)
+
+        def test_tiling_arrays(self):
+            """平铺数组"""
+            # tile(A, reps)
+            # 复制数组
+            a = np.array([0, 1, 2])
+            assert np.array_equal(np.tile(a, 2), [0, 1, 2, 0, 1, 2])
+            assert np.array_equal(np.tile(a, (1, 1)), [[0, 1, 2]])
+            assert np.array_equal(np.tile(a, (2, 1)), [[0, 1, 2], [0, 1, 2]])
+
     class TestMathematicalFunctions:
         """
         `数学函数 <https://numpy.org/doc/stable/reference/routines.math.html>`_
@@ -478,9 +573,25 @@ class TestNumpyFundamentals:
 
     def test_broadcasting(self):
         """
-        `广播 <https://numpy.org/doc/stable/user/basics.broadcasting.html>`_
+        `广播 <https://numpy.org/doc/stable/user/basics.broadcasting.html>`_：
+            形状不同的数组执行算术运算时，在满足某些约束条件下，较小数组的形状会“广播”成与较大数组相兼容的形状，
+            从而进行逐元素运算，而无需显式复制数据
+
+        三大广播规则：从尾部维度（最右边）开始向前对比
+
+        1. 维度对齐：如果维度数不同，形状较小的数组会在左边补1，直到维度数相同
+        2. 兼容检查与拉伸：维度长度相等，或其中一个是1（可拉伸）
+        3. 结果形状：结果形状每个维度上的值是输入数组在该维度上的最大值
         """
-        a = np.array([1.0, 2.0, 3.0]) * np.array([2.0, 2.0, 2.0])
-        b = np.array([1.0, 2.0, 3.0]) * 2
-        assert np.array_equal(a, b)
+        a = np.array([[1, 2, 3], [4, 5, 6]])
+        assert a.shape == (2, 3)
+        b = np.array([10, 20, 30])
+        assert b.shape == (3,)
+        # 广播：b的形状，维度对齐 (1, 3)，兼容检查与拉伸 (2, 3)
+        # 即 [10, 20, 30] → [[10, 20, 30]] → [[10, 20, 30], [10, 20, 30]]
+        assert np.array_equal(a + b, [[11, 22, 33], [14, 25, 36]])
+
+        # 显式复制
+        c = np.tile(b, (2, 1))
+        assert np.array_equal(a + b, a + c)
 # endregion
