@@ -289,12 +289,15 @@ class TestArrayObjects:
 
             def test_controlling_iteration_order(self):
                 """控制迭代顺序"""
-                # 内存顺序：默认，性能最佳
-                # 数组 a 和 a 转置的元素以相同的顺序被遍历
-                assert np.array_equal([x for x in np.nditer(self.a, order='K')],
-                                      [x for x in np.nditer(self.a.T, order='K')])
-                # C 顺序遍历：行优先
+                # K (Keep)：默认策略，“怎么存就怎么取”，性能最高
+                assert np.array_equal([x for x in np.nditer(self.a.copy(order='C'), order='K')], [0, 1, 2, 3, 4, 5])
+                assert np.array_equal([x for x in np.nditer(self.a.copy(order='F'), order='K')], [0, 3, 1, 4, 2, 5])
+                # a 和 a.T 都是默认按 C 顺序存储，所以被遍历顺序相同
+                assert np.array_equal([x for x in np.nditer(self.a)], [x for x in np.nditer(self.a.T)])
+
+                # C 顺序遍历：行优先，内存顺序
                 assert np.array_equal([x for x in np.nditer(self.a, order='C')], [0, 1, 2, 3, 4, 5])
+
                 # Fortran 顺序遍历：列优先
                 assert np.array_equal([x for x in np.nditer(self.a, order='F')], [0, 3, 1, 4, 2, 5])
 
@@ -343,6 +346,39 @@ class TestArrayObjects:
                 it = np.nditer(self.a, flags=['f_index'])
                 while not it.finished:
                     it.iternext()
+
+        class TestBroadcastingArrayIteration:
+            """广播数组迭代"""
+
+            def test(self):
+                a = np.arange(3)
+                b = np.arange(6).reshape(2, 3)
+                assert np.array_equal([(x, y) for x, y in np.nditer([a, b])], [(0, 0), (1, 1), (2, 2), (0, 3), (1, 4), (2, 5)])
+
+            def test_iterator_allocated_output_arrays(self):
+                """迭代器分配的输出数组"""
+
+                def square(a):
+                    with np.nditer([a, None]) as it:
+                        for x, y in it:
+                            y[...] = x * x
+                        return it.operands[1]
+
+                assert np.array_equal(square([1, 2, 3]), [1, 4, 9])
+
+            def test_outer_product_iteration(self):
+                """外积迭代"""
+                a = np.arange(2)
+                b = np.arange(4).reshape(2, 2)
+                # op_axes：显示地控制维度对齐
+                # [0, -1, -1] 表示 [a的第0维, 新轴, 新轴], 即 a 形状 (2,) → (2, 1, 1)
+                # [-1, 0, 1] 表示 [新轴, b的第0维, b的第1维], 即 b 形状 (2, 2) → (1, 2, 2)
+                it = np.nditer([a, b, None], op_axes=[[0, -1, -1], [-1, 0, 1], None])
+                with it:
+                    for x, y, z in it:
+                        z[...] = x * y
+                    result = it.operands[2]
+                assert np.array_equal(result, [[[0, 0], [0, 0]], [[0, 1], [2, 3]]])
 
 
 # region 按主题分类的例程和对象：https://numpy.org/doc/stable/reference/routines.html
