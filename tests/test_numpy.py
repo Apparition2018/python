@@ -222,7 +222,7 @@ class TestArrayObjects:
 
             def test_ndarray_constructor(self):
                 """
-                ndarray(shape[, dtype, buffer, offset, ...])
+                ndarray(shape[, dtype, buffer, offset, strides, order])
                 """
 
         def test_attributes(self):
@@ -401,33 +401,18 @@ class TestRoutinesAndObjectsByTopic:
         `数组操作 <https://numpy.org/doc/stable/reference/routines.array-manipulation.html>`_
         """
 
-        class TestTransposeLikeOperations:
+        def test_transpose_like_operations(self):
             """转置类操作"""
             a = np.arange(8).reshape(2, 2, 2)
-
-            def test_t(self):
-                """
-                ndarray.T：返回转置数组视图
-                """
-                assert np.array_equal(self.a.T, [[[0, 4], [2, 6]], [[1, 5], [3, 7]]])
-
-                # 对于一维数组不起作用
-                b = np.array([0, 1, 2])
-                assert np.array_equal(b.T, b)
-
-            def test_rollaxis(self):
-                """
-                rollaxis(a, axis[, start])：将 axis 轴移到 start 位置
-                """
-                b = np.rollaxis(self.a, 0, 2)
-                assert np.array_equal(b, [[[0, 1], [4, 5]], [[2, 3], [6, 7]]])
-
-            def test_swapaxes(self):
-                """
-                swapaxes(a, axis1, axis2)：交换 axis1 和 axis2 轴
-                """
-                b = np.swapaxes(self.a, 0, 2)
-                assert np.array_equal(b, [[[0, 4], [2, 6]], [[1, 5], [3, 7]]])
+            # ndarray.T                     返回转置数组视图
+            assert np.array_equal(a.T, [[[0, 4], [2, 6]], [[1, 5], [3, 7]]])
+            # 对于一维数组不起作用
+            b = np.array([0, 1, 2])
+            assert np.array_equal(b.T, b)
+            # rollaxis(a, axis[, start])    将 axis 轴移到 start 位置
+            assert np.array_equal(np.rollaxis(a, 0, 2), [[[0, 1], [4, 5]], [[2, 3], [6, 7]]])
+            # swapaxes(a, axis1, axis2)     交换 axis1 和 axis2 轴
+            assert np.array_equal(np.swapaxes(a, 0, 2), [[[0, 4], [2, 6]], [[1, 5], [3, 7]]])
 
         class TestChangingNumberOfDimensions:
             """改变维度数"""
@@ -473,6 +458,38 @@ class TestRoutinesAndObjectsByTopic:
                 assert np.expand_dims(x, axis=0).shape == (1, 2)
                 assert np.expand_dims(x, axis=1).shape == (2, 1)
                 assert np.expand_dims(x, axis=(0, 1)).shape == (1, 1, 2)
+
+        def test_joining_arrays(self):
+            """连接数组"""
+            a = np.array([[1, 2], [3, 4]])
+            b = np.array([[5, 6], [7, 8]])
+            # concatenate(arrays, /[, axis, out, dtype, casting])   沿指定轴连接数组
+            assert np.array_equal(np.concatenate((a, b), axis=0), [[1, 2], [3, 4], [5, 6], [7, 8]])
+            assert np.array_equal(np.concatenate((a, b), axis=1), [[1, 2, 5, 6], [3, 4, 7, 8]])
+            assert np.array_equal(np.concatenate((a, b), axis=None), [1, 2, 3, 4, 5, 6, 7, 8])
+            # stack(arrays[, axis, out, dtype, casting])            沿新轴连接数组
+            assert np.array_equal(np.stack((a, b), axis=0), [[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
+            assert np.array_equal(np.stack((a, b), axis=1), [[[1, 2], [5, 6]], [[3, 4], [7, 8]]])
+            # vstack(tup, *[, dtype, casting])                      垂直堆叠数组
+            assert np.array_equal(np.vstack((a, b)), [[1, 2], [3, 4], [5, 6], [7, 8]])
+            # hstack(tup, *[, dtype, casting])                      水平堆叠数组
+            assert np.array_equal(np.hstack((a, b)), [[1, 2, 5, 6], [3, 4, 7, 8]])
+
+        def test_splitting_arrays(self):
+            """分割数组"""
+            a = np.array([[1, 2, 3, 4], [5, 6, 7, 8]])
+            # split(ary, indices_or_sections[, axis])   分割数组
+            split = np.split(a, 2)
+            assert np.array_equal(split[0], [[1, 2, 3, 4]])
+            assert np.array_equal(split[1], [[5, 6, 7, 8]])
+            # vsplit(ary, indices_or_sections)          垂直分割数组
+            vsplit = np.vsplit(a, 2)
+            assert np.array_equal(vsplit[0], [[1, 2, 3, 4]])
+            assert np.array_equal(vsplit[1], [[5, 6, 7, 8]])
+            # hsplit(ary, indices_or_sections)          水平分割数组
+            hsplit = np.hsplit(a, 2)
+            assert np.array_equal(hsplit[0], [[1, 2], [5, 6]])
+            assert np.array_equal(hsplit[1], [[3, 4], [7, 8]])
 
         def test_tiling_arrays(self):
             """平铺数组"""
