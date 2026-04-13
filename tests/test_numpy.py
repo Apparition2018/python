@@ -225,6 +225,21 @@ class TestArrayObjects:
                 ndarray(shape[, dtype, buffer, offset, strides, order])
                 """
 
+        def test_internal_memory_layout(self):
+            """
+            `内部内存布局 <https://numpy.org/doc/stable/reference/arrays.ndarray.html#internal-memory-layout-of-an-ndarray>`_：
+                连续的一维计算机内存片段
+            """
+            import random
+
+            arr = [random.random() for _ in range(1000000)]
+            t1, _ = Timer.measure(sum, arr)
+
+            np_arr = np.array(arr)
+            t2, _ = Timer.measure(np.sum, np_arr)
+
+            assert t1 > t2 * 3
+
         def test_attributes(self):
             """属性"""
             arr = np.array([[1, 2, 3], [2, 3, 4]])
@@ -249,39 +264,6 @@ class TestArrayObjects:
             assert np.array_equal(arr.imag, [[0, 0, 0], [0, 0, 0]])
             # 一维迭代器
             assert np.array_equal(list(arr.flat), [1, 2, 3, 2, 3, 4])
-
-        class TestMethods:
-            def test_shape_manipulation(self):
-                """形状操作"""
-                arr = np.arange(6)
-                # reshape(shape)        返回一个包含相同数据但具有新形状的数组
-                # 内存连续返回视图，不连续返回副本
-                reshape_arr = arr.reshape(2, 3)
-                assert np.array_equal(reshape_arr, np.array([[0, 1, 2],
-                                                             [3, 4, 5]]))
-                # flatten([order])      返回一个一维数组副本
-                assert np.array_equal(list(reshape_arr.flatten()), [0, 1, 2, 3, 4, 5])
-                # ravel([order])        返回一个一维数组视图
-                assert np.array_equal(list(reshape_arr.ravel()), [0, 1, 2, 3, 4, 5])
-                # transpose(*axes)      返回一个数组转置视图
-                assert np.array_equal(reshape_arr.transpose(), [[0, 3],
-                                                                [1, 4],
-                                                                [2, 5]])
-
-        def test_internal_memory_layout(self):
-            """
-            `内部内存布局 <https://numpy.org/doc/stable/reference/arrays.ndarray.html#internal-memory-layout-of-an-ndarray>`_：
-                连续的一维计算机内存片段
-            """
-            import random
-
-            arr = [random.random() for _ in range(1000000)]
-            t1, _ = Timer.measure(sum, arr)
-
-            np_arr = np.array(arr)
-            t2, _ = Timer.measure(np.sum, np_arr)
-
-            assert t1 > t2 * 3
 
     class TestDataTypePromotion:
         """
@@ -401,11 +383,40 @@ class TestRoutinesAndObjectsByTopic:
         `数组操作 <https://numpy.org/doc/stable/reference/routines.array-manipulation.html>`_
         """
 
+        def test_basic_operations(self):
+            """基础操作"""
+            a = np.array([[1, 2, 3], [2, 3, 4]])
+            # 维度的数量
+            assert a.ndim == np.ndim(a) == 2
+            # 维度的元组
+            assert a.shape == np.shape(a) == (2, 3)
+            # 指定轴元素的数量
+            assert a.size == 2 * 3
+            assert np.size(a, 1) == 3
+
+        def test_changing_array_shape(self):
+            """改变数组形状"""
+            a = np.arange(6)
+            # reshape(a, /, shape[, order, copy])   返回一个包含相同数据但具有新形状的数组
+            # 内存连续返回视图，不连续返回副本
+            reshape_arr = a.reshape(2, 3)
+            assert np.array_equal(reshape_arr, np.array([[0, 1, 2],
+                                                         [3, 4, 5]]))
+            # flatten([order])                      返回一个一维数组副本
+            assert np.array_equal(list(reshape_arr.flatten()), [0, 1, 2, 3, 4, 5])
+            # ravel(a[, order])                     返回一个一维数组视图
+            assert np.array_equal(list(reshape_arr.ravel()), [0, 1, 2, 3, 4, 5])
+
         def test_transpose_like_operations(self):
             """转置类操作"""
             a = np.arange(8).reshape(2, 2, 2)
             # ndarray.T                     返回转置数组视图
             assert np.array_equal(a.T, [[[0, 4], [2, 6]], [[1, 5], [3, 7]]])
+            # transpose(a[, axes])          返回一个轴转置的数组
+            assert np.array_equal(np.transpose(a), [[[0, 4], [2, 6]], [[1, 5], [3, 7]]])
+            assert np.array_equal(np.transpose(a, (1, 0, 2)), [[[0, 1], [4, 5]], [[2, 3], [6, 7]]])
+            assert np.array_equal(np.transpose(a, (0, 2, 1)), [[[0, 2], [1, 3]], [[4, 6], [5, 7]]])
+            assert np.array_equal(np.transpose(a, (2, 1, 0)), [[[0, 4], [2, 6]], [[1, 5], [3, 7]]])
             # 对于一维数组不起作用
             b = np.array([0, 1, 2])
             assert np.array_equal(b.T, b)
@@ -493,12 +504,14 @@ class TestRoutinesAndObjectsByTopic:
 
         def test_tiling_arrays(self):
             """平铺数组"""
-            # tile(A, reps)
-            # 复制数组
+            # tile(A, reps)                             根据 reps 在各维度复制数组
             a = np.array([0, 1, 2])
             assert np.array_equal(np.tile(a, 2), [0, 1, 2, 0, 1, 2])
             assert np.array_equal(np.tile(a, (1, 1)), [[0, 1, 2]])
             assert np.array_equal(np.tile(a, (2, 1)), [[0, 1, 2], [0, 1, 2]])
+
+        def test_adding_and_removing_elements(self):
+            """添加和删除元素"""
 
     class TestMathematicalFunctions:
         """
