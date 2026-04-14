@@ -510,8 +510,67 @@ class TestRoutinesAndObjectsByTopic:
             assert np.array_equal(np.tile(a, (1, 1)), [[0, 1, 2]])
             assert np.array_equal(np.tile(a, (2, 1)), [[0, 1, 2], [0, 1, 2]])
 
-        def test_adding_and_removing_elements(self):
+        class TestAddingAndRemovingElements:
             """添加和删除元素"""
+
+            def test_resize(self):
+                """
+                resize(a, new_shape)：创建一个指定新形状的数组。当尺寸与原数组不一致时，会循环重复或截断原数据
+                """
+                a = np.array([[1, 2], [3, 4]])
+                assert np.array_equal(np.resize(a, (2, 3)), [[1, 2, 3], [4, 1, 2]])
+                assert np.array_equal(np.resize(a, (1, 3)), [[1, 2, 3]])
+
+            def test_append(self):
+                """
+                append(arr, values[, axis])：在末尾添加数值或数组，并返回新数组
+                """
+                a = np.array([[1, 2], [3, 4]])
+                assert np.array_equal(np.append(a, [[5, 6]]), [1, 2, 3, 4, 5, 6])
+                assert np.array_equal(np.append(a, [[5, 6]], axis=0), [[1, 2], [3, 4], [5, 6]])
+                assert np.array_equal(np.append(a, [[5], [6]], axis=1), [[1, 2, 5], [3, 4, 6]])
+
+            def test_insert(self):
+                """
+                insert(arr, obj, values, axis=None)：在指定轴的指定位置之前插入数值，并返回新数组
+                """
+                a = np.array([[1, 2], [3, 4]])
+                assert np.array_equal(np.insert(a, 0, 0), [0, 1, 2, 3, 4])
+                assert np.array_equal(np.insert(a, 0, 0, axis=0), [[0, 0], [1, 2], [3, 4]])
+                assert np.array_equal(np.insert(a, 0, 0, axis=1), [[0, 1, 2], [0, 3, 4]])
+                assert np.array_equal(np.insert(a, 0, [0, 2], axis=1), [[0, 1, 2], [2, 3, 4]])
+                assert np.array_equal(np.insert(a, [0], [[0], [2]], axis=1), [[0, 1, 2], [2, 3, 4]])
+
+            def test_delete(self):
+                """
+                delete(arr, obj, axis=None)：删除指定位置的子数组，并返回新数组
+                """
+                a = np.array([[1, 2, 3, 4], [5, 6, 7, 8]])
+                assert np.array_equal(np.delete(a, 1, axis=0), [[1, 2, 3, 4]])
+                assert np.array_equal(np.delete(a, np.s_[::2], axis=1), [[2, 4], [6, 8]])
+                assert np.array_equal(np.delete(a, [1, 3, 5, 7]), [1, 3, 5, 7])
+
+            def test_unique(self):
+                """
+                unique(ar[, return_index, return_inverse, ...])：去重，默认按升序返回
+                """
+                a = np.array([[2, 2, 3, 1], [4, 2, 3, 3], [2, 2, 3, 1]])
+                assert np.array_equal(np.unique(a), [1, 2, 3, 4])
+                assert np.array_equal(np.unique(a, axis=0), [[2, 2, 3, 1], [4, 2, 3, 3]])
+                a = np.array([1, 2, 5, 4, 2, 3, 2])
+                # return_index：返回去重后数组元素在原数组的索引位置
+                v, indices = np.unique(a, return_index=True)
+                assert np.array_equal(v, [1, 2, 3, 4, 5])
+                assert np.array_equal(indices, [0, 1, 5, 3, 2])
+                # return_inverse：返回原数组元组在去重后数组的索引位置
+                v, indices = np.unique(a, return_inverse=True)
+                assert np.array_equal(indices, [0, 1, 4, 3, 1, 2, 1])
+                assert np.array_equal(v[indices], a)
+                # return_counts：返回去重后数组元素在原数组的出现次数
+                v, counts = np.unique(a, return_counts=True)
+                assert np.array_equal(counts, [1, 3, 1, 1, 1])
+                assert np.array_equal(np.repeat(v, counts), [1, 2, 2, 2, 3, 4, 5])
+
 
     class TestMathematicalFunctions:
         """
