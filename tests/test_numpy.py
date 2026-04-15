@@ -3,6 +3,24 @@ import numpy as np
 from src.utils.timer import Timer
 
 
+# region NumPy 模块结构：https://numpy.org/doc/stable/reference/module_structure.html
+class TestNumPysModuleStructure:
+    def test_string_functionality(self):
+        """
+        `字符串功能 <https://numpy.org/doc/stable/reference/routines.strings.html>`_
+        """
+        # center(a, width[, fillchar])          元素居中，并使用指定字符填充至指定宽度
+        assert np.array_equal(np.strings.center(['1', '2', '3'], 3, '*'), ['*1*', '*2*', '*3*'])
+
+        # capitalize(a)                         元素首字母大写
+        assert np.array_equal(np.strings.capitalize(['cat', 'dog']), ['Cat', 'Dog'])
+
+        # title(a)                              单词首字母大写
+        assert np.array_equal(np.strings.title(['i love u']), ['I Love U'])
+
+
+# endregion
+
 # region 数组对象：https://numpy.org/doc/stable/reference/arrays.html
 class TestArrayObjects:
     def test_built_in_scalar_types(self):
@@ -376,6 +394,8 @@ class TestArrayObjects:
                 assert np.array_equal(result, [[[0, 0], [0, 0]], [[0, 1], [2, 3]]])
 
 
+# endregion
+
 # region 按主题分类的例程和对象：https://numpy.org/doc/stable/reference/routines.html
 class TestRoutinesAndObjectsByTopic:
     class TestArrayManipulationRoutines:
@@ -571,11 +591,39 @@ class TestRoutinesAndObjectsByTopic:
                 assert np.array_equal(counts, [1, 3, 1, 1, 1])
                 assert np.array_equal(np.repeat(v, counts), [1, 2, 2, 2, 3, 4, 5])
 
+    class TestInputAndOutput:
+        """
+        `输入和输出 <https://numpy.org/doc/stable/reference/routines.io.html>`_
+        """
+
+        def test_string_formatting(self):
+            """字符串格式化"""
+            # 浮点数 → 位置计数法的十进制字符串
+            assert np.format_float_positional(np.float32(np.pi)) == '3.1415927'
+            # 浮点数 → 科学计数法的十进制字符串
+            assert np.format_float_scientific(np.float32(np.pi)) == '3.1415927e+00'
 
     class TestMathematicalFunctions:
         """
         `数学函数 <https://numpy.org/doc/stable/reference/routines.math.html>`_
         """
+
+        def test_trigonometric_functions(self):
+            """三角函数"""
+            angles_rad = np.array((0, 30, 45, 60, 90)) * np.pi / 180
+            # 正弦函数
+            assert np.allclose(np.sin(angles_rad), [0, 0.5, 0.70710678, 0.8660254, 1])
+            # 余弦函数
+            assert np.allclose(np.cos(angles_rad), [1, 0.8660254, 0.70710678, 0.5, 0])
+            # 正切函数
+            assert np.allclose(np.tan(np.array((0, 30, 45, 60)) * np.pi / 180), [0, 0.57735027, 1, 1.73205081])
+
+        def test_rounding(self):
+            """四舍五入"""
+            a = np.array([1.054, 1.055])
+            assert np.array_equal(np.round(a, 2), [1.05, 1.06])
+            assert np.array_equal(np.floor(a * 100) / 100, [1.05, 1.05])
+            assert np.array_equal(np.ceil(a * 100) / 100, [1.06, 1.06])
 
         def test_sums_products_differences(self):
             # sum(a[, axis, dtype, out, keepdims, ...])
@@ -597,6 +645,39 @@ class TestRoutinesAndObjectsByTopic:
             assert np.array_equal(x.sum(axis=(0, 1)), [(0 + 6) + (2 + 8) + (4 + 10), (1 + 7) + (3 + 9) + (5 + 11)])
             assert np.array_equal(x.sum(axis=(1, 2)), [(0 + 2 + 4) + (1 + 3 + 5), (6 + 8 + 10) + (7 + 9 + 11)])
             assert np.array_equal(x.sum(axis=(0, 2)), [(0 + 6) + (1 + 7), (2 + 8) + (3 + 9), (4 + 10) + (5 + 11)])
+
+        def test_arithmetic_operations(self):
+            """算术运算"""
+            a = np.array([[1, 2], [3, 4]])
+            b = np.array([1., 2.])
+            # 逐元素相加
+            r = np.add(a, b)
+            assert np.array_equal(r, a + b) and np.array_equal(r, [[2, 4], [4, 6]])
+            # 逐元素相减
+            r = np.subtract(a, b)
+            assert np.array_equal(r, a - b) and np.array_equal(r, [[0, 0], [2, 2]])
+            # 逐元素相乘
+            r = np.multiply(a, b)
+            assert np.array_equal(r, a * b) and np.array_equal(r, [[1, 4], [3, 8]])
+            # 逐元素相除
+            r = np.divide(a, b)
+            assert np.array_equal(r, a / b) and np.array_equal(r, [[1, 1], [3, 2]])
+            # 逐元素倒数
+            assert np.array_equal(np.reciprocal(b), [1, 0.5])
+
+        def test_extrema_finding(self):
+            """极值查找"""
+            a = np.array([[3, 5, 9, 1, 7], [2, 10, 8, 4, 6]])
+            # 最小值
+            assert np.min(a) == 1
+            assert np.array_equal(np.min(a, 0), [2, 5, 8, 1, 6])
+            assert np.array_equal(np.min(a, 1), [1, 2])
+            # 最大值
+            assert np.max(a) == 10
+            assert np.array_equal(np.max(a, 0), [3, 10, 9, 4, 7])
+            assert np.array_equal(np.max(a, 1), [9, 10])
+            print()
+
 
     class TestRandomSampling:
         """
