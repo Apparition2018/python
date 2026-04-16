@@ -676,8 +676,9 @@ class TestRoutinesAndObjectsByTopic:
             assert np.max(a) == 10
             assert np.array_equal(np.max(a, 0), [3, 10, 9, 4, 7])
             assert np.array_equal(np.max(a, 1), [9, 10])
-            print()
 
+        def test_miscellaneous(self):
+            """杂项"""
 
     class TestRandomSampling:
         """
@@ -714,6 +715,41 @@ class TestRoutinesAndObjectsByTopic:
             # nonzero(a)
             # 返回非零元素的索引
             assert np.array_equal(np.nonzero([True, 0, False, 1])[0], [0, 3])
+
+    class TestStatistics:
+        """
+        `统计 <https://numpy.org/doc/stable/reference/routines.statistics.html>`_
+        """
+
+        def test_order_statistics(self):
+            """顺序统计"""
+            # quantile(a, q[, axis, out, overwrite_input, ...])
+            # 计算数组 a 中第 q 个百分位数
+            a = np.array([[10, 7, 4], [3, 2, 1]])
+            assert np.percentile(a, 50) == (4 + 3) / 2 == 3.5
+            assert np.array_equal(np.percentile(a, 50, axis=0), [6.5, 4.5, 2.5])
+            assert np.array_equal(np.percentile(a, 50, axis=1), [7, 2])
+            assert np.array_equal(np.percentile(a, 50, axis=1, keepdims=True), [[7], [2]])
+
+        def test_averages_and_variances(self):
+            """平均值和方差"""
+            a = np.array([[10, 7, 4], [3, 2, 1]])
+            # median(a[, axis, out, overwrite_input, keepdims])
+            # 计算指定轴的中位数
+            assert np.median(a) == 3.5
+            assert np.array_equal(np.mean(a, 0), [6.5, 4.5, 2.5])
+            assert np.array_equal(np.mean(a, 1), [7, 2])
+            # mean(a[, axis, dtype, out, keepdims, where])
+            # 计算指定轴的算数平均值
+            assert np.mean(a) == (10 + 7 + 4 + 3 + 2 + 1) / 6 == 4.5
+            assert np.array_equal(np.mean(a, 0), [6.5, 4.5, 2.5])
+            assert np.array_equal(np.mean(a, 1), [7, 2])
+            # average(a[, axis, weights, returned, keepdims])
+            # 计算指定轴的加权平均值
+            assert np.average(a) == (10 + 7 + 4 + 3 + 2 + 1) / 6 == 4.5
+            assert np.array_equal(np.average(a, 0), [6.5, 4.5, 2.5])
+            assert np.array_equal(np.average(a, 1), [7, 2])
+            assert np.array_equal(np.average(a, 1, weights=[1/2, 1/4, 1/4]), [10 * 1/2 + 7 * 1/4 + 4 * 1/4, 3 * 1/2 + 2 * 1/4 + 1 * 1/4])
 
 
 # endregion
