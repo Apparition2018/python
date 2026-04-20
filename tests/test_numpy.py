@@ -340,7 +340,8 @@ class TestArrayObjects:
                 # 内存不连续，需要遍历6次
                 assert np.array_equal(sum(1 for _ in np.nditer(self.a.T, flags=['external_loop'], order='F')), 6)
                 # 启用缓冲，即使内存不连续，也只需遍历1次
-                assert np.array_equal(sum(1 for _ in np.nditer(self.a, flags=['external_loop', 'buffered'], order='F')), 1)
+                assert np.array_equal(sum(1 for _ in np.nditer(self.a, flags=['external_loop', 'buffered'], order='F')),
+                                      1)
 
             def test_tracking_index_or_multi_index(self):
                 """追踪索引或多索引"""
@@ -366,7 +367,8 @@ class TestArrayObjects:
             def test(self):
                 a = np.arange(3)
                 b = np.arange(6).reshape(2, 3)
-                assert np.array_equal([(x, y) for x, y in np.nditer([a, b])], [(0, 0), (1, 1), (2, 2), (0, 3), (1, 4), (2, 5)])
+                assert np.array_equal([(x, y) for x, y in np.nditer([a, b])],
+                                      [(0, 0), (1, 1), (2, 2), (0, 3), (1, 4), (2, 5)])
 
             def test_iterator_allocated_output_arrays(self):
                 """迭代器分配的输出数组"""
@@ -679,6 +681,8 @@ class TestRoutinesAndObjectsByTopic:
 
         def test_miscellaneous(self):
             """杂项"""
+            # 非负平方根
+            assert np.array_equal(np.sqrt([1, 4, np.inf]), [1, 2, np.inf])
 
     class TestRandomSampling:
         """
@@ -749,7 +753,8 @@ class TestRoutinesAndObjectsByTopic:
             assert np.average(a) == (10 + 7 + 4 + 3 + 2 + 1) / 6 == 4.5
             assert np.array_equal(np.average(a, 0), [6.5, 4.5, 2.5])
             assert np.array_equal(np.average(a, 1), [7, 2])
-            assert np.array_equal(np.average(a, 1, weights=[1/2, 1/4, 1/4]), [10 * 1/2 + 7 * 1/4 + 4 * 1/4, 3 * 1/2 + 2 * 1/4 + 1 * 1/4])
+            assert np.array_equal(np.average(a, 1, weights=[1 / 2, 1 / 4, 1 / 4]),
+                                  [10 * 1 / 2 + 7 * 1 / 4 + 4 * 1 / 4, 3 * 1 / 2 + 2 * 1 / 4 + 1 * 1 / 4])
 
 
 # endregion
