@@ -1,14 +1,13 @@
 # PyCharm Settings
 - j: JetBrains
-- n: New
-- e: Every Time
+- n: New Project
 - o: Optional
 ---
-## Settings → Python
+## Python
 ### Interpreter
-    1. Settings → Python → Interpreter
-    2. Python Interpreter → 点击 → Show All…
-    3. + → Add Local Interpreter…
+    1 Settings → Python → Interpreter
+    2 Python Interpreter → 点击 → Show All…
+    3 + → Add Local Interpreter…
         3.1 Generate new
             3.1.1 Type: Virtualenv
             3.1.2 Base python: D:\miniconda3\python.exe
@@ -17,12 +16,13 @@
             3.2.1 Type: Conda
             3.2.2 Path to conda: D:\miniconda3\Scripts\conda.exe
             3.2.3 Environment: py314
-    4. 右键刚刚 Add 的 Interpreter → Rename
-## Settings → Tools
-### Terminal (-jno)
-    1. Settings → Tools → Terminal
-    2. Shell path: cmd.exe "/K" "D:\miniconda3\Scripts\activate.bat"
-    3. Default tab name: miniconda3
+    4 右键刚刚 Add 的 Interpreter → Rename
+---
+## Tools
+### Terminal (-jo)
+    1 Settings → Tools → Terminal
+    2 Shell path: cmd.exe "/K" "D:\miniconda3\Scripts\activate.bat"
+    3 Default tab name: miniconda3
 ---
 ## pip
     pip install package_name
