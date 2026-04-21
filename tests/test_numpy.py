@@ -9,13 +9,11 @@ class TestNumPysModuleStructure:
         """
         `字符串功能 <https://numpy.org/doc/stable/reference/routines.strings.html>`_
         """
-        # center(a, width[, fillchar])          元素居中，并使用指定字符填充至指定宽度
+        # center                元素居中，并使用指定字符填充至指定宽度
         assert np.array_equal(np.strings.center(['1', '2', '3'], 3, '*'), ['*1*', '*2*', '*3*'])
-
-        # capitalize(a)                         元素首字母大写
+        # capitalize            元素首字母大写
         assert np.array_equal(np.strings.capitalize(['cat', 'dog']), ['Cat', 'Dog'])
-
-        # title(a)                              单词首字母大写
+        # title                 单词首字母大写
         assert np.array_equal(np.strings.title(['i love u']), ['I Love U'])
 
 
@@ -334,24 +332,24 @@ class TestArrayObjects:
                 1. 不使用 external_loop：迭代器每次只返回一个元素
                 2. 使用 external_loop：迭代器尽可能多地收集内存连续的元素，打包成一个1维数组返回
                 """
-                assert np.array_equal(sum(1 for _ in np.nditer(self.a.T)), 6)
-                # 内存连续，只需遍历1次
-                assert np.array_equal(sum(1 for _ in np.nditer(self.a.T, flags=['external_loop'])), 1)
-                # 内存不连续，需要遍历6次
-                assert np.array_equal(sum(1 for _ in np.nditer(self.a.T, flags=['external_loop'], order='F')), 6)
-                # 启用缓冲，即使内存不连续，也只需遍历1次
-                assert np.array_equal(sum(1 for _ in np.nditer(self.a, flags=['external_loop', 'buffered'], order='F')),
-                                      1)
+                assert np.array_equal(sum(1 for _ in np.nditer(self.a)), 6)
+                # 按行存且按行读，内存中的数据完全连续，只需遍历1次
+                assert np.array_equal(sum(1 for _ in np.nditer(self.a, flags=['external_loop'])), 1)
+                # 按行存但按列读，内存中的数据不连续，只能每次提取一列，需要遍历3次
+                assert np.array_equal(sum(1 for _ in np.nditer(self.a, flags=['external_loop'], order='F')), 3)
+                # 启用缓冲，即使不连续，也只需遍历1次
+                assert np.array_equal(
+                    sum(1 for _ in np.nditer(self.a, flags=['external_loop', 'buffered'], order='F')), 1)
 
             def test_tracking_index_or_multi_index(self):
                 """追踪索引或多索引"""
-                # c_index：追踪 C 顺序索引
+                # c_index       追踪 C 顺序索引
                 it = np.nditer(self.a, flags=['c_index'])
                 assert np.array_equal([it.index for _ in it], [0, 1, 2, 3, 4, 5])
-                # f_index：追踪 Fortran 顺序索引
+                # f_index       追踪 Fortran 顺序索引
                 it = np.nditer(self.a, flags=['f_index'])
                 assert np.array_equal([it.index for _ in it], [0, 2, 4, 1, 3, 5])
-                # multi_index：追踪多索引
+                # multi_index   追踪多索引
                 it = np.nditer(self.a, flags=['multi_index'])
                 assert np.array_equal([it.multi_index for _ in it], [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)])
 
@@ -419,22 +417,20 @@ class TestRoutinesAndObjectsByTopic:
         def test_changing_array_shape(self):
             """改变数组形状"""
             a = np.arange(6)
-            # reshape(a, /, shape[, order, copy])   返回一个包含相同数据但具有新形状的数组
-            # 内存连续返回视图，不连续返回副本
+            # reshape           返回一个包含相同数据但具有新形状的数组。内存连续返回视图，不连续返回副本
             reshape_arr = a.reshape(2, 3)
-            assert np.array_equal(reshape_arr, np.array([[0, 1, 2],
-                                                         [3, 4, 5]]))
+            assert np.array_equal(reshape_arr, np.array([[0, 1, 2], [3, 4, 5]]))
             # flatten([order])                      返回一个一维数组副本
             assert np.array_equal(list(reshape_arr.flatten()), [0, 1, 2, 3, 4, 5])
-            # ravel(a[, order])                     返回一个一维数组视图
+            # ravel             返回一个一维数组视图
             assert np.array_equal(list(reshape_arr.ravel()), [0, 1, 2, 3, 4, 5])
 
         def test_transpose_like_operations(self):
             """转置类操作"""
             a = np.arange(8).reshape(2, 2, 2)
-            # ndarray.T                     返回转置数组视图
+            # ndarray.T         返回转置数组视图
             assert np.array_equal(a.T, [[[0, 4], [2, 6]], [[1, 5], [3, 7]]])
-            # transpose(a[, axes])          返回一个轴转置的数组
+            # transpose         返回一个轴转置的数组
             assert np.array_equal(np.transpose(a), [[[0, 4], [2, 6]], [[1, 5], [3, 7]]])
             assert np.array_equal(np.transpose(a, (1, 0, 2)), [[[0, 1], [4, 5]], [[2, 3], [6, 7]]])
             assert np.array_equal(np.transpose(a, (0, 2, 1)), [[[0, 2], [1, 3]], [[4, 6], [5, 7]]])
@@ -442,9 +438,9 @@ class TestRoutinesAndObjectsByTopic:
             # 对于一维数组不起作用
             b = np.array([0, 1, 2])
             assert np.array_equal(b.T, b)
-            # rollaxis(a, axis[, start])    将 axis 轴移到 start 位置
+            # rollaxis          将 axis 轴移到 start 位置
             assert np.array_equal(np.rollaxis(a, 0, 2), [[[0, 1], [4, 5]], [[2, 3], [6, 7]]])
-            # swapaxes(a, axis1, axis2)     交换 axis1 和 axis2 轴
+            # swapaxes          交换 axis1 和 axis2 轴
             assert np.array_equal(np.swapaxes(a, 0, 2), [[[0, 4], [2, 6]], [[1, 5], [3, 7]]])
 
         class TestChangingNumberOfDimensions:
@@ -452,7 +448,7 @@ class TestRoutinesAndObjectsByTopic:
 
             def test_broadcast(self):
                 """
-                broadcast(*arrays)：生成一个模仿广播的对象。
+                broadcast：生成一个模仿广播的对象。
                     对输入参数进行广播，并返回一个封装结果的对象。它具有 shape 和 nd 属性，并可用作迭代器。
                 """
                 x = np.array([[1], [2], [3]])
@@ -462,7 +458,7 @@ class TestRoutinesAndObjectsByTopic:
 
             def test_broadcast_to(self):
                 """
-                broadcast_to(array, shape[, subok])：将数组广播到新的形状。返回具有给定形状的原始数组的只读视图。
+                broadcast_to：将数组广播到新的形状。返回具有给定形状的原始数组的只读视图。
                 """
                 x = np.array([0, 1])
                 a = np.broadcast_to(x, (2, 2))
@@ -470,7 +466,7 @@ class TestRoutinesAndObjectsByTopic:
 
             def test_squeeze(self):
                 """
-                squeeze(a[, axis])：移除长度为一的轴。返回的是原数组的视图。
+                squeeze：移除长度为一的轴。返回的是原数组的视图。
                 """
                 x = np.array([[[0], [1], [2]]])
                 assert x.shape == (1, 3, 1)
@@ -484,7 +480,7 @@ class TestRoutinesAndObjectsByTopic:
 
             def test_expand_dims(self):
                 """
-                expand_dims(a, axis)：扩展数组的形状。返回的是原数组的视图。
+                expand_dims：扩展数组的形状。返回的是原数组的视图。
                 """
                 x = np.array([1, 2])
                 assert x.shape == (2,)
@@ -496,37 +492,37 @@ class TestRoutinesAndObjectsByTopic:
             """连接数组"""
             a = np.array([[1, 2], [3, 4]])
             b = np.array([[5, 6], [7, 8]])
-            # concatenate(arrays, /[, axis, out, dtype, casting])   沿指定轴连接数组
+            # concatenate       沿指定轴连接数组
             assert np.array_equal(np.concatenate((a, b), axis=0), [[1, 2], [3, 4], [5, 6], [7, 8]])
             assert np.array_equal(np.concatenate((a, b), axis=1), [[1, 2, 5, 6], [3, 4, 7, 8]])
             assert np.array_equal(np.concatenate((a, b), axis=None), [1, 2, 3, 4, 5, 6, 7, 8])
-            # stack(arrays[, axis, out, dtype, casting])            沿新轴连接数组
+            # stack             沿新轴连接数组
             assert np.array_equal(np.stack((a, b), axis=0), [[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
             assert np.array_equal(np.stack((a, b), axis=1), [[[1, 2], [5, 6]], [[3, 4], [7, 8]]])
-            # vstack(tup, *[, dtype, casting])                      垂直堆叠数组
+            # vstack            垂直堆叠数组
             assert np.array_equal(np.vstack((a, b)), [[1, 2], [3, 4], [5, 6], [7, 8]])
-            # hstack(tup, *[, dtype, casting])                      水平堆叠数组
+            # hstack            水平堆叠数组
             assert np.array_equal(np.hstack((a, b)), [[1, 2, 5, 6], [3, 4, 7, 8]])
 
         def test_splitting_arrays(self):
             """分割数组"""
             a = np.array([[1, 2, 3, 4], [5, 6, 7, 8]])
-            # split(ary, indices_or_sections[, axis])   分割数组
+            # split             分割数组
             split = np.split(a, 2)
             assert np.array_equal(split[0], [[1, 2, 3, 4]])
             assert np.array_equal(split[1], [[5, 6, 7, 8]])
-            # vsplit(ary, indices_or_sections)          垂直分割数组
+            # vsplit            垂直分割数组
             vsplit = np.vsplit(a, 2)
             assert np.array_equal(vsplit[0], [[1, 2, 3, 4]])
             assert np.array_equal(vsplit[1], [[5, 6, 7, 8]])
-            # hsplit(ary, indices_or_sections)          水平分割数组
+            # hsplit            水平分割数组
             hsplit = np.hsplit(a, 2)
             assert np.array_equal(hsplit[0], [[1, 2], [5, 6]])
             assert np.array_equal(hsplit[1], [[3, 4], [7, 8]])
 
         def test_tiling_arrays(self):
             """平铺数组"""
-            # tile(A, reps)                             根据 reps 在各维度复制数组
+            # tile              根据 reps 在各维度复制数组
             a = np.array([0, 1, 2])
             assert np.array_equal(np.tile(a, 2), [0, 1, 2, 0, 1, 2])
             assert np.array_equal(np.tile(a, (1, 1)), [[0, 1, 2]])
@@ -534,47 +530,30 @@ class TestRoutinesAndObjectsByTopic:
 
         class TestAddingAndRemovingElements:
             """添加和删除元素"""
+            a = np.array([[1, 2], [3, 4]])
 
-            def test_resize(self):
-                """
-                resize(a, new_shape)：创建一个指定新形状的数组。当尺寸与原数组不一致时，会循环重复或截断原数据
-                """
-                a = np.array([[1, 2], [3, 4]])
-                assert np.array_equal(np.resize(a, (2, 3)), [[1, 2, 3], [4, 1, 2]])
-                assert np.array_equal(np.resize(a, (1, 3)), [[1, 2, 3]])
-
-            def test_append(self):
-                """
-                append(arr, values[, axis])：在末尾添加数值或数组，并返回新数组
-                """
-                a = np.array([[1, 2], [3, 4]])
-                assert np.array_equal(np.append(a, [[5, 6]]), [1, 2, 3, 4, 5, 6])
-                assert np.array_equal(np.append(a, [[5, 6]], axis=0), [[1, 2], [3, 4], [5, 6]])
-                assert np.array_equal(np.append(a, [[5], [6]], axis=1), [[1, 2, 5], [3, 4, 6]])
-
-            def test_insert(self):
-                """
-                insert(arr, obj, values, axis=None)：在指定轴的指定位置之前插入数值，并返回新数组
-                """
-                a = np.array([[1, 2], [3, 4]])
-                assert np.array_equal(np.insert(a, 0, 0), [0, 1, 2, 3, 4])
-                assert np.array_equal(np.insert(a, 0, 0, axis=0), [[0, 0], [1, 2], [3, 4]])
-                assert np.array_equal(np.insert(a, 0, 0, axis=1), [[0, 1, 2], [0, 3, 4]])
-                assert np.array_equal(np.insert(a, 0, [0, 2], axis=1), [[0, 1, 2], [2, 3, 4]])
-                assert np.array_equal(np.insert(a, [0], [[0], [2]], axis=1), [[0, 1, 2], [2, 3, 4]])
-
-            def test_delete(self):
-                """
-                delete(arr, obj, axis=None)：删除指定位置的子数组，并返回新数组
-                """
-                a = np.array([[1, 2, 3, 4], [5, 6, 7, 8]])
-                assert np.array_equal(np.delete(a, 1, axis=0), [[1, 2, 3, 4]])
-                assert np.array_equal(np.delete(a, np.s_[::2], axis=1), [[2, 4], [6, 8]])
-                assert np.array_equal(np.delete(a, [1, 3, 5, 7]), [1, 3, 5, 7])
+            def test(self):
+                # resize        创建一个指定新形状的数组。当尺寸与原数组不一致时，会循环重复或截断原数据
+                assert np.array_equal(np.resize(self.a, (2, 3)), [[1, 2, 3], [4, 1, 2]])
+                assert np.array_equal(np.resize(self.a, (1, 3)), [[1, 2, 3]])
+                # append        在末尾添加数值或数组，并返回新数组
+                assert np.array_equal(np.append(self.a, [[5, 6]]), [1, 2, 3, 4, 5, 6])
+                assert np.array_equal(np.append(self.a, [[5, 6]], axis=0), [[1, 2], [3, 4], [5, 6]])
+                assert np.array_equal(np.append(self.a, [[5], [6]], axis=1), [[1, 2, 5], [3, 4, 6]])
+                # insert        在指定轴的指定位置之前插入数值，并返回新数组
+                assert np.array_equal(np.insert(self.a, 0, 0), [0, 1, 2, 3, 4])
+                assert np.array_equal(np.insert(self.a, 0, 0, axis=0), [[0, 0], [1, 2], [3, 4]])
+                assert np.array_equal(np.insert(self.a, 0, 0, axis=1), [[0, 1, 2], [0, 3, 4]])
+                assert np.array_equal(np.insert(self.a, 0, [0, 2], axis=1), [[0, 1, 2], [2, 3, 4]])
+                assert np.array_equal(np.insert(self.a, [0], [[0], [2]], axis=1), [[0, 1, 2], [2, 3, 4]])
+                # delete        删除指定位置的子数组，并返回新数组
+                assert np.array_equal(np.delete(self.a, 1, axis=0), [[1, 2]])
+                assert np.array_equal(np.delete(self.a, np.s_[::2], axis=1), [[2], [4]])
+                assert np.array_equal(np.delete(self.a, [1, 3]), [1, 3])
 
             def test_unique(self):
                 """
-                unique(ar[, return_index, return_inverse, ...])：去重，默认按升序返回
+                unique：去重，默认按升序返回
                 """
                 a = np.array([[2, 2, 3, 1], [4, 2, 3, 3], [2, 2, 3, 1]])
                 assert np.array_equal(np.unique(a), [1, 2, 3, 4])
@@ -628,8 +607,7 @@ class TestRoutinesAndObjectsByTopic:
             assert np.array_equal(np.ceil(a * 100) / 100, [1.06, 1.06])
 
         def test_sums_products_differences(self):
-            # sum(a[, axis, dtype, out, keepdims, ...])
-            # 对指定轴上的数组元素求和
+            # sum：对指定轴上的数组元素求和
             x = np.array([[[0, 1],
                            [2, 3],
                            [4, 5]],
@@ -681,8 +659,6 @@ class TestRoutinesAndObjectsByTopic:
 
         def test_miscellaneous(self):
             """杂项"""
-            # 非负平方根
-            assert np.array_equal(np.sqrt([1, 4, np.inf]), [1, 2, np.inf])
 
     class TestRandomSampling:
         """
@@ -693,31 +669,52 @@ class TestRoutinesAndObjectsByTopic:
             """
             `遗留生成器 <https://numpy.org/doc/stable/reference/random/legacy.html>`_
             """
-            # 根据给定形状生成随机浮点数数组，元素范围[0, 1)
+            # rand              根据给定形状生成随机浮点数数组，元素范围[0, 1)
             for d3 in np.random.rand(3, 2, 1):
                 for d2 in d3:
                     for e in d2:
                         assert 0 <= e < 1
-
-            # randint(low, high=None, size=None, dtype=None)
-            # 生成随机整数数组，元素范围[low, high)
+            # randint           生成随机整数数组，元素范围[low, high)
             for e in np.random.randint(0, 10, 5):
                 assert 0 <= e < 10
-
-            # 根据给定形状生成符合标准正态分布的随机浮点数数组，元素范围(-∞, +∞)
+            # randn             根据给定形状生成符合标准正态分布的随机浮点数数组，元素范围(-∞, +∞)
             for e in np.random.randn(10):
                 assert -np.inf < e < np.inf
-
-            # normal(loc=0.0, scale=1.0, size=None)
-            # 根据给定形状生成任意正态分布的随机浮点数数组，元素范围(-∞, +∞)
+            # normal            根据给定形状生成任意正态分布的随机浮点数数组，元素范围(-∞, +∞)
             for e in np.random.normal(0, 1, 10):
                 assert -np.inf < e < np.inf
 
     class TestSortingSearchingAndCounting:
+        def test_sorting(self):
+            """
+            +----------------+--------+-------------+------------+----------+
+            | Algorithm Type | Speed  | Worst Case  | Workspace  | Stable   |
+            +================+========+=============+============+==========+
+            | 'quicksort'    | 1      | O(n^2)      | 0          | No       |
+            +----------------+--------+-------------+------------+----------+
+            | 'mergesort'    | 2      | O(n*log(n)) | ~n/2       | Yes      |
+            +----------------+--------+-------------+------------+----------+
+            | 'heapsort'     | 3      | O(n*log(n)) | 0          | No       |
+            +----------------+--------+-------------+------------+----------+
+            """
+            a = np.array([[2, 4],
+                          [3, 1]])
+            dtype = [('name', 'U10'), ('height', float), ('age', int)]
+            values = [('Amy', 1.8, 41), ('Leo', 1.9, 38), ('Mia', 1.7, 38)]
+            b = np.array(values, dtype=dtype)
+            # sort              返回排序后的数组副本
+            assert np.array_equal(np.sort(a), [[2, 4], [1, 3]])
+            assert np.array_equal(np.sort(a, axis=0), [[2, 1],
+                                                       [3, 4]])
+            assert np.array_equal(np.sort(b, order='height')['name'], ['Mia', 'Amy', 'Leo'])
+            # argsort           返回排序后的索引
+            assert np.array_equal(np.sort(a), [0, 1], [1, 0])
+            assert np.array_equal(np.sort(a, axis=0), [0, 1], [1, 0])
+            # lexsort           多键排序，从最后一个键开始
+
 
         def test_searching(self):
-            # nonzero(a)
-            # 返回非零元素的索引
+            # nonzero           返回非零元素的索引
             assert np.array_equal(np.nonzero([True, 0, False, 1])[0], [0, 3])
 
     class TestStatistics:
@@ -727,8 +724,7 @@ class TestRoutinesAndObjectsByTopic:
 
         def test_order_statistics(self):
             """顺序统计"""
-            # quantile(a, q[, axis, out, overwrite_input, ...])
-            # 计算数组 a 中第 q 个百分位数
+            # quantile          计算数组 a 中第 q 个百分位数
             a = np.array([[10, 7, 4], [3, 2, 1]])
             assert np.percentile(a, 50) == (4 + 3) / 2 == 3.5
             assert np.array_equal(np.percentile(a, 50, axis=0), [6.5, 4.5, 2.5])
@@ -738,23 +734,28 @@ class TestRoutinesAndObjectsByTopic:
         def test_averages_and_variances(self):
             """平均值和方差"""
             a = np.array([[10, 7, 4], [3, 2, 1]])
-            # median(a[, axis, out, overwrite_input, keepdims])
-            # 计算指定轴的中位数
+            # median            中位数
             assert np.median(a) == 3.5
             assert np.array_equal(np.mean(a, 0), [6.5, 4.5, 2.5])
             assert np.array_equal(np.mean(a, 1), [7, 2])
-            # mean(a[, axis, dtype, out, keepdims, where])
-            # 计算指定轴的算数平均值
+            # mean              算术平均值
             assert np.mean(a) == (10 + 7 + 4 + 3 + 2 + 1) / 6 == 4.5
             assert np.array_equal(np.mean(a, 0), [6.5, 4.5, 2.5])
             assert np.array_equal(np.mean(a, 1), [7, 2])
-            # average(a[, axis, weights, returned, keepdims])
-            # 计算指定轴的加权平均值
+            # average           加权平均值
             assert np.average(a) == (10 + 7 + 4 + 3 + 2 + 1) / 6 == 4.5
             assert np.array_equal(np.average(a, 0), [6.5, 4.5, 2.5])
             assert np.array_equal(np.average(a, 1), [7, 2])
             assert np.array_equal(np.average(a, 1, weights=[1 / 2, 1 / 4, 1 / 4]),
                                   [10 * 1 / 2 + 7 * 1 / 4 + 4 * 1 / 4, 3 * 1 / 2 + 2 * 1 / 4 + 1 * 1 / 4])
+            # std               标准差，std = sqrt(mean((x - x.mean())**2
+            assert np.allclose(np.std(a), [3.09569593])
+            assert np.allclose(np.std(a, axis=0), [3.5, 2.5, 1.5])
+            assert np.allclose(np.std(a, axis=1), [2.44948974, 0.81649658])
+            # var               方差，var = (mean((x - x.mean())**2
+            assert np.allclose(np.var(a), [9.583333333333334])
+            assert np.allclose(np.var(a, axis=0), [12.25, 6.25, 2.25])
+            assert np.allclose(np.var(a, axis=1), [6, 0.66666667])
 
 
 # endregion
