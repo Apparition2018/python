@@ -1,5 +1,8 @@
 import time
+from pathlib import Path
 from typing import Callable, Any
+
+from _pytest import fixtures
 
 
 class Timer:
@@ -21,3 +24,11 @@ class Timer:
         result = func(*args, **kwargs)
         end = time.perf_counter()
         return end - start, result
+
+
+class Paths:
+    _FIXTURES_DIR = Path(__file__).parent / 'fixtures'
+
+    @staticmethod
+    def fixture(filename: str) -> Path:
+        return Paths._FIXTURES_DIR / filename

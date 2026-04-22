@@ -15,6 +15,8 @@ import requests
 from fake_useragent import UserAgent
 from tenacity import retry, stop_after_attempt
 
+from util import Paths
+
 
 class TestRequests:
     """
@@ -44,7 +46,7 @@ class TestRequests:
                 # 重试
                 max_retries=Retry(total=3, backoff_factor=0.5)
             )
-            session.mount("https://", adapter)
+            session.mount('https://', adapter)
             r = session.get(
                 'https://2025.ip138.com/',
                 headers={'User-Agent': UserAgent().random},
@@ -90,7 +92,7 @@ class TestSelenium:
         options = webdriver.ChromeOptions()
         # 不显示图形界面
         # options.add_argument('headless')
-        service = Service(executable_path='chromedriver.exe')
+        service = Service(executable_path=str(Paths.fixture('chromedriver.exe')))
         driver = webdriver.Chrome(options=options, service=service)
         driver.get('https://www.baidu.com')
 
@@ -109,7 +111,7 @@ class TestSelenium:
         WebDriverWait(driver, 10).until(ec.visibility_of_element_located((By.ID, 'page')))
         # endregion
         # 通过执行 js 滚动到底部
-        driver.execute_script("window.scrollTo(0, document.documentElement.scrollHeight);")
+        driver.execute_script('window.scrollTo(0, document.documentElement.scrollHeight);')
         time.sleep(1)
         # 通过执行 js 打开一个窗口
         driver.execute_script('window.open("https://www.sogou.com")')
@@ -130,18 +132,18 @@ class TestTenacity:
     @staticmethod
     def do_something():
         if random.random() < 0.8:
-            print("失败")
-            raise Exception("异常")
+            print('失败')
+            raise Exception('异常')
         else:
-            print("成功")
+            print('成功')
 
     @staticmethod
     def do_something2():
         if random.random() < 0.7:
-            print("失败")
+            print('失败')
             return False
         else:
-            print("成功")
+            print('成功')
             return True
 
     def test_stop(self):
@@ -193,16 +195,16 @@ class TestTenacity:
         do_something = retry(retry=retry_if_result(lambda res: res is False))(self.do_something2)
         do_something()
         # retry_if_exception_message：根据异常消息是否包含指定字符串决定是否重试
-        do_something = retry(retry=retry_if_exception_message(match="异常"))(self.do_something)
+        do_something = retry(retry=retry_if_exception_message(match='异常'))(self.do_something)
         do_something()
         # retry_any
         do_something = retry(
-            retry=retry_any(retry_if_exception_type(Exception), retry_if_exception_message(match="异常"))
+            retry=retry_any(retry_if_exception_type(Exception), retry_if_exception_message(match='异常'))
         )(self.do_something)
         do_something()
         # retry_all
         do_something = retry(
-            retry=retry_all(retry_if_exception_type(Exception), retry_if_exception_message(match="异常"))
+            retry=retry_all(retry_if_exception_type(Exception), retry_if_exception_message(match='异常'))
         )(self.do_something)
         do_something()
 
@@ -212,13 +214,13 @@ class TestTenacity:
         """
         from tenacity import before_sleep_log
         def log_before(retry_state):
-            print(f"🟢 [before] 第{retry_state.attempt_number}次尝试")
+            print(f'🟢 [before] 第{retry_state.attempt_number}次尝试')
 
         def log_after(retry_state):
-            print(f"🔴 [after]  总耗时{retry_state.seconds_since_start}秒\n")
+            print(f'🔴 [after]  总耗时{retry_state.seconds_since_start}秒\n')
 
         do_something = retry(
-            before=log_before, after=log_after, before_sleep=before_sleep_log(logging.getLogger(), logging.INFO)
+            before=log_before, after=log_after, before_sleep=before_sleep_log(logging.getLogger(), logging.INFO) # type: ignore
         )(self.do_something)
         do_something()
 
@@ -239,7 +241,7 @@ def test_jsonpath_ng():
     `jsonpath-ng <https://pypi.org/project/jsonpath-ng/>`_
     """
     from jsonpath_ng import parse
-    r = requests.get("https://reqres.in/api/users", headers={"x-api-key": "reqres-free-v1"})
+    r = requests.get('https://reqres.in/api/users', headers={'x-api-key': 'reqres-free-v1'})
     titles = [match.value for match in parse('$.data[*].first_name').find(r.json())]
     print(titles[:5])
 
@@ -253,7 +255,7 @@ def test_lxml():
     3. 支持 XPath、RelaxNG、XML Schema、XSLT、C14N 等功能
     """
     from lxml import etree
-    r = requests.get("https://www.w3schools.com/xml/books.xml")
+    r = requests.get('https://www.w3schools.com/xml/books.xml')
     root = etree.XML(r.content)
     assert (root.xpath('/bookstore/book[2]/author/text()'), 'J K. Rowling')
     assert (root.xpath('/bookstore/book[2]/title/@lang/text()'), 'Harry Potter')
@@ -269,7 +271,7 @@ def test_moviepy():
 
     def get_windows_ua():
         return next((ua.random for _ in range(10) if 'Windows' in ua.random),
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
 
     url = 'https://www.bilibili.com/video/BV1D4411L7Qd/'
     headers = {'User-Agent': get_windows_ua(), 'Referer': url}
@@ -312,16 +314,16 @@ def test_pymysql():
                                  cursorclass=cursors.DictCursor)
     with connection:
         with connection.cursor() as cursor:
-            sql = "INSERT INTO `demo` (`id`, `name`) VALUES (%s, %s)"
+            sql = 'INSERT INTO `demo` (`id`, `name`) VALUES (%s, %s)'
             cursor.execute(sql, ('1', 'ljh'))
         connection.commit()
         with connection.cursor() as cursor:
-            sql = "SELECT `id`, `name` FROM `demo` WHERE `id`=%s"
+            sql = 'SELECT `id`, `name` FROM `demo` WHERE `id`=%s'
             cursor.execute(sql, 1)
             result = cursor.fetchone()
             print(result)
         with connection.cursor() as cursor:
-            sql = "DELETE FROM `demo` WHERE id=%s"
+            sql = 'DELETE FROM `demo` WHERE id=%s'
             cursor.execute(sql, 1)
         connection.commit()
 
@@ -331,10 +333,10 @@ class TestOpenpyxl:
     `openpyxl <https://pypi.org/project/openpyxl/>`_：用于读取/写入Excel 2010 xlsx/xlsm/xltx/xltm 文件
     """
     import openpyxl
-    FILENAME = 'test.xlsx'
+    XLSX_PATH = Paths.fixture('test.xlsx')
 
     def test_read(self):
-        workbook = self.openpyxl.load_workbook(self.FILENAME)
+        workbook = self.openpyxl.load_workbook(self.XLSX_PATH)
         # 工作表列表
         assert workbook.sheetnames == [sheet.title for sheet in workbook]
         # 工作表
@@ -370,7 +372,7 @@ class TestOpenpyxl:
     def test_write(self):
         from openpyxl.utils import get_column_letter
         from openpyxl.styles import Font
-        workbook = self.openpyxl.load_workbook("test.xlsx")
+        workbook = self.openpyxl.load_workbook(self.XLSX_PATH)
         worksheet = workbook[workbook.sheetnames[1]]
         # 设置工作表标题
         worksheet.title = 'write'
@@ -379,18 +381,18 @@ class TestOpenpyxl:
             worksheet.delete_rows(1)
         for row in range(1, 10):
             # 在工作表底部追加一行值
-            worksheet.append([f"{get_column_letter(col)}{row}" for col in range(1, 10)])
+            worksheet.append([f'{get_column_letter(col)}{row}' for col in range(1, 10)])
             # 设置行高
             worksheet.row_dimensions[row].height = 25
             for col in range(1, 10):
                 # 设置列宽
                 if row == 1: worksheet.column_dimensions[get_column_letter(col)].width = 4.78
                 # 设置单元格字体
-                worksheet[f"{get_column_letter(col)}{row}"].font = Font(size=14, italic=True)
+                worksheet[f'{get_column_letter(col)}{row}'].font = Font(size=14, italic=True)
         row = 10
         for col in range(1, 10):
             # 设置单元格
-            worksheet.cell(row, col, f"{get_column_letter(col)}{row}")
+            worksheet.cell(row, col, f'{get_column_letter(col)}{row}')
         # 合并单元格
         worksheet.merge_cells('A11:B12')
         worksheet['A11'] = 'A11'
@@ -399,7 +401,7 @@ class TestOpenpyxl:
         # 创建工作表
         workbook.create_sheet('new', 2)
         # 保存当前工作簿
-        workbook.save(self.FILENAME)
+        workbook.save(self.XLSX_PATH)
 
 
 class TestPythonDocx:
@@ -407,11 +409,11 @@ class TestPythonDocx:
     `python-docx <https://pypi.org/project/python-docx/>`_：用于读取、创建和更新 Microsoft Word 2007+（.docx）文件
     """
     from docx import Document
-    FILENAME = 'test.docx'
+    DOCX_PATH = str(Paths.fixture('test.docx'))
 
     def test_read(self):
         from docx.enum.style import WD_STYLE_TYPE
-        doc = type(self).Document(self.FILENAME)
+        doc = type(self).Document(self.DOCX_PATH)
         # 遍历段落
         for paragraph in doc.paragraphs:
             # 所有标题
@@ -431,7 +433,7 @@ class TestPythonDocx:
         from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
         from docx.shared import Inches
         from docx.shared import Pt
-        doc = type(self).Document(self.FILENAME)
+        doc = type(self).Document(self.DOCX_PATH)
         section = doc.sections[0]
         # 页面宽高
         assert round(section.page_width.cm, 1) == 21.0
@@ -478,7 +480,7 @@ class TestPythonDocx:
         # 相当于
         doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
         # endregion
-        doc.save(self.FILENAME)
+        doc.save(self.DOCX_PATH)
 
 
 def test_pandas():
@@ -493,18 +495,18 @@ def test_pandas():
     4. 分组：groupby()
     5. 复杂多级：apply()
     """
-    filename = 'test.xlsx'
+    excel_path = Paths.fixture('test.xlsx')
     # 读取工作表，以下三行均表示读取第一个工作表
-    dataframe = pandas.read_excel(filename)
-    dataframe = pandas.read_excel(filename, sheet_name='read')
-    dataframe = pandas.read_excel(filename, sheet_name=0)
+    dataframe = pandas.read_excel(excel_path)
+    dataframe = pandas.read_excel(excel_path, sheet_name='read')
+    dataframe = pandas.read_excel(excel_path, sheet_name=0)
     # 读取多个工作表
-    dataframes = pandas.read_excel(filename, sheet_name=['read', 2])
+    dataframes = pandas.read_excel(excel_path, sheet_name=['read', 2])
     # 读取特定列
-    dataframe = pandas.read_excel(filename, usecols=['caseid', 'data'])
-    dataframe = pandas.read_excel(filename, usecols=[0, 2])
+    dataframe = pandas.read_excel(excel_path, usecols=['caseid', 'data'])
+    dataframe = pandas.read_excel(excel_path, usecols=[0, 2])
     # 其它
-    dataframe = pandas.read_excel(filename,
+    dataframe = pandas.read_excel(excel_path,
                                   # 跳过n行再读取n行
                                   skiprows=0, nrows=9,
                                   # 指定某列数据类型
@@ -521,7 +523,7 @@ def test_pandas():
     dataframe.drop_duplicates()
     # 遍历数据
     for row in dataframe.itertuples():
-        print(f"Index: {row.Index}, caseid: {row.caseid}, excepted: {row.excepted}, data: {row.data}")
+        print(f'Index: {row.Index}, caseid: {row.caseid}, excepted: {row.excepted}, data: {row.data}')
     # 两种索引方式读取数据
     assert dataframe.iloc[0, 0] == dataframe.loc[0, 'caseid'] == 1
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -536,7 +538,7 @@ def test_pdfplumber():
     `pdfplumber <https://pypi.org/project/pdfplumber/>`_：获取 PDF 每个 char、rectangle、line 的信息
     """
     import pdfplumber
-    with pdfplumber.open('test.pdf') as pdf:
+    with pdfplumber.open(Paths.fixture('test.pdf')) as pdf:
         for page in pdf.pages:
             print(page.extract_text)
             for table in page.extract_tables():
@@ -549,7 +551,7 @@ def test_pypdf():
     """
     from pypdf import PdfReader, PdfWriter
     pwd = '123456'
-    reader = PdfReader('test.pdf')
+    reader = PdfReader(Paths.fixture('test.pdf'))
     # 取消密码
     reader.decrypt(pwd)
     # watermark_page = PdfReader('watermark.pdf').get_page(0)
@@ -569,11 +571,11 @@ class TestPPTX:
     `python-pptx <https://pypi.org/project/python-pptx/>`_：创建、读取和更新 PowerPoint (.pptx) 文件
     """
     from pptx import Presentation
-    FILENAME = "test.pptx"
+    PPTX_PATH = str(Paths.fixture('test.pptx'))
 
     def test_read(self):
         # 读取演示文稿
-        p = type(self).Presentation(self.FILENAME)
+        p = type(self).Presentation(self.PPTX_PATH)
         # 遍历幻灯片
         for slide in p.slides:
             # 遍历 shapes
@@ -634,4 +636,4 @@ class TestPPTX:
         chart.plots[0].has_data_labels = True
         chart.plots[0].data_labels.number_format = '#,#'
         chart.plots[0].data_labels.position = XL_DATA_LABEL_POSITION.INSIDE_END
-        p.save(self.FILENAME)
+        p.save(self.PPTX_PATH)

@@ -16,10 +16,12 @@ import shutil
 import tempfile
 import threading
 import time
-from typing import Any
+from typing import Any, List
 
 import pytest
 from loguru import logger
+
+from util import Paths
 
 
 # region Docstring
@@ -97,17 +99,17 @@ class TestBuiltinFunctions:
                 self.age = age
 
             def __str__(self):
-                return f"我是 {self.name}，今年 {self.age} 岁"
+                return f'我是 {self.name}，今年 {self.age} 岁'
 
             def __repr__(self):
-                return f"Person(name='{self.name}', age={self.age})"
+                return f'Person(name="{self.name}", age={self.age})'
 
             def __eq__(self, other):
                 if not isinstance(other, Person):
                     return False
                 return self.name == other.name and self.age == other.age
 
-        p = Person("Mary", 18)
+        p = Person('Mary', 18)
         # 容器中显示，输出：[Person(name='Mary', age=18)]
         print([p])
         # 重建对象
@@ -388,11 +390,11 @@ class TestTextProcessingServices:
             # r"text" 原始字符串，避免转义问题
             # re.compile() 将正则表达式的样式编译为一个 正则表达式对象
             # 字符串是否为有效扑克牌
-            valid = re.compile(r"^[a2-9tjqk]{5}$")
-            assert display_match(valid.match("akt5q")) == "<Match: 'akt5q', groups=()>"
+            valid = re.compile(r'^[a2-9tjqk]{5}$')
+            assert display_match(valid.match('akt5q')) == "<Match: 'akt5q', groups=()>"
             # 字符串是否包含对子
-            pair = re.compile(r".*(.).*\1")
-            assert display_match(pair.match("717ak")) == "<Match: '717', groups=('7',)>"
+            pair = re.compile(r'.*(.).*\1')
+            assert display_match(pair.match('717ak')) == "<Match: '717', groups=('7',)>"
 
 
 # endregion
@@ -454,13 +456,15 @@ class TestNumericAndMathematicalModules:
             print(random.sample(['high cards', 'low cards'], counts=[16, 36], k=20).count('high cards') / 20)
 
             # 3. 估计一个被做了手脚的正面朝上概率为 60% 硬币，在 7 次抛掷中得到 5 次及以上正面的概率
-            print(sum(random.binomialvariate(n=7, p=0.6) >= 5 for i in range(10_000)) / 10_000)
+            print(sum(random.binomialvariate(n=7, p=0.6) >= 5 for _ in range(10_000)) / 10_000)
 
             # 4. 5 个样本的中位数位于中间两个四分位区之内的概率
             def trial():
-                return 2_500 <= sorted(random.choices(range(10_000), k=5))[2] < 7_500
+                numbers: List[int] = random.choices(range(10_000), k=5)
+                median: int = sorted(numbers)[2]
+                return 2_500 <= median < 7_500
 
-            sum(trial() for i in range(10_000)) / 10_000
+            sum(trial() for _ in range(10_000)) / 10_000
 
         def test_simulate_sampling_from_itertools_combinatoric_iterators(self):
             """
@@ -488,9 +492,9 @@ class TestFileAndDirectoryAccess:
         """
         from pathlib import Path
         p = Path('.')
-        print(f"绝对路径：{p.absolute()}")
-        print(f"是否存在：{p.exists()}")
-        print(f"是否为目录：{p.is_dir()}")
+        print(f'绝对路径：{p.absolute()}')
+        print(f'是否存在：{p.exists()}')
+        print(f'是否为目录：{p.is_dir()}')
         # 遍历目录下文件
         for _ in p.iterdir(): pass
         # / 操作符可以创建子路径，如 os.path.join()
@@ -500,29 +504,29 @@ class TestFileAndDirectoryAccess:
         """
         `常用的路径操作 <https://docs.python.org/zh-cn/3/library/os.path.html>`_
         """
-        filepath = "./test.txt"
+        file_path = Paths.fixture('test.txt')
         # 绝对路径
-        abs_path = os.path.abspath(filepath)
-        assert abs_path == r'D:\Liang\git\python\tests\test.txt'
+        abs_path = os.path.abspath(file_path)
+        assert abs_path == r'D:\Liang\git\python\tests\fixtures\test.txt'
         dirname = os.path.dirname(abs_path)
         basename = os.path.basename(abs_path)
-        print(f"目录：{dirname}")
-        print(f"文件名：{basename}")
-        print(f"是否为绝对路径：{os.path.isabs(abs_path)}")
-        print(f"是否为文件：{os.path.isfile(abs_path)}")
-        print(f"是否为目录：{os.path.isdir(abs_path)}")
-        print(f"是否为已存在路径：{os.path.exists(abs_path)}")
-        print(f"是否指向同一文件：{os.path.samefile(filepath, abs_path)}")
-        print(f"文件大小：{os.path.getsize(abs_path)}")
-        print(f"创建时间：{time.ctime(os.path.getctime(abs_path))}")
-        print(f"最后访问时间：{time.ctime(os.path.getatime(abs_path))}")
-        print(f"最后修改时间：{time.ctime(os.path.getmtime(abs_path))}")
-        print(f"规范化路径：{os.path.normpath('././test.txt')}")
+        print(f'目录：{dirname}')
+        print(f'文件名：{basename}')
+        print(f'是否为绝对路径：{os.path.isabs(abs_path)}')
+        print(f'是否为文件：{os.path.isfile(abs_path)}')
+        print(f'是否为目录：{os.path.isdir(abs_path)}')
+        print(f'是否为已存在路径：{os.path.exists(abs_path)}')
+        print(f'是否指向同一文件：{os.path.samefile(file_path, abs_path)}')
+        print(f'文件大小：{os.path.getsize(abs_path)}')
+        print(f'创建时间：{time.ctime(os.path.getctime(abs_path))}')
+        print(f'最后访问时间：{time.ctime(os.path.getatime(abs_path))}')
+        print(f'最后修改时间：{time.ctime(os.path.getmtime(abs_path))}')
+        print(f'规范化路径：{os.path.normpath('././fixtures/test.txt')}')
         # split
-        assert os.path.split(abs_path) == (r'D:\Liang\git\python\tests', 'test.txt')
-        assert os.path.splitdrive(abs_path) == ('D:', r'\Liang\git\python\tests\test.txt')
-        assert os.path.splitroot(abs_path) == ('D:', '\\', r'Liang\git\python\tests\test.txt')
-        assert os.path.splitext(abs_path) == (r'D:\Liang\git\python\tests\test', '.txt')
+        assert os.path.split(abs_path) == (r'D:\Liang\git\python\tests\fixtures', 'test.txt')
+        assert os.path.splitdrive(abs_path) == ('D:', r'\Liang\git\python\tests\fixtures\test.txt')
+        assert os.path.splitroot(abs_path) == ('D:', '\\', r'Liang\git\python\tests\fixtures\test.txt')
+        assert os.path.splitext(abs_path) == (r'D:\Liang\git\python\tests\fixtures\test', '.txt')
         # join
         assert os.path.join(dirname, basename) == abs_path
 
@@ -581,8 +585,8 @@ class TestDataCompressionAndArchiving:
             archive_zip = f'{tmpdir}/archive.zip'
             # 压缩
             with zipfile.ZipFile(archive_zip, 'w') as z:
-                z.write('test.txt')
-                z.write('test.json')
+                z.write(Paths.fixture('test.txt'))
+                z.write(Paths.fixture('test.json'))
             # 解压
             with zipfile.ZipFile(archive_zip, 'r') as z:
                 z.extractall(f'{tmpdir}/archive')
@@ -609,14 +613,14 @@ class TestCryptographicServices:
 class TestConcurrentExecution:
     @staticmethod
     def crawl(link, method):
-        logger.info(f"crawl started for {link} by {method}")
+        logger.info(f'crawl started for {link} by {method}')
         time.sleep(0.01)
-        logger.info(f"crawl ended for {link} by {method}")
+        logger.info(f'crawl ended for {link} by {method}')
 
     links = [
-        "https://python.org",
-        "https://docs.python.org",
-        "https://peps.python.org",
+        'https://python.org',
+        'https://docs.python.org',
+        'https://peps.python.org',
     ]
 
     def test_concurrency(self):
@@ -625,7 +629,7 @@ class TestConcurrentExecution:
         # region：Thread
         threads = []
         for link in self.links:
-            t = threading.Thread(target=self.crawl, args=(link,), kwargs={"method": "Thread"})
+            t = threading.Thread(target=self.crawl, args=(link,), kwargs={'method': 'Thread'})
             threads.append(t)
         for t in threads: t.start()
         for t in threads: t.join()
@@ -634,7 +638,7 @@ class TestConcurrentExecution:
         # region：Process
         processes = []
         for link in self.links:
-            p = multiprocessing.Process(target=self.crawl, args=(link,), kwargs={"method": "Process"})
+            p = multiprocessing.Process(target=self.crawl, args=(link,), kwargs={'method': 'Process'})
             processes.append(p)
         for p in processes: p.start()
         for p in processes: p.join()
@@ -642,18 +646,18 @@ class TestConcurrentExecution:
 
         # region：ThreadPoolExecutor
         with ThreadPoolExecutor(max_workers=3) as executor:
-            [executor.submit(self.crawl, link, "ThreadPoolExecutor") for link in self.links]
+            [executor.submit(self.crawl, link, 'ThreadPoolExecutor') for link in self.links]
         # endregion
 
         # region：ProcessPoolExecutor
         with ProcessPoolExecutor(max_workers=3) as executor:
-            [executor.submit(self.crawl, link, "ProcessPoolExecutor") for link in self.links]
+            [executor.submit(self.crawl, link, 'ProcessPoolExecutor') for link in self.links]
         # endregion
 
         # region：Timer：https://docs.python.org/zh-cn/3/library/threading.html#timer-objects
         interval = 0.1
         for link in self.links:
-            threading.Timer(interval, self.crawl, args=(link,), kwargs={"method": "Timer"}).start()
+            threading.Timer(interval, self.crawl, args=(link,), kwargs={'method': 'Timer'}).start()
         time.sleep(interval * len(self.links))
         # endregion
 
@@ -674,10 +678,10 @@ class TestConcurrentExecution:
 
             def worker(name):
                 local_data.name = name
-                print(f"线程: {threading.current_thread().name}, 名字: {local_data.name}")
+                print(f'线程: {threading.current_thread().name}, 名字: {local_data.name}')
 
-            threads.append(threading.Thread(target=worker, args=("Alice",), name="T1"))
-            threads.append(threading.Thread(target=worker, args=("Bob",), name="T2"))
+            threads.append(threading.Thread(target=worker, args=('Alice',), name='T1'))
+            threads.append(threading.Thread(target=worker, args=('Bob',), name='T2'))
             for t in threads: t.start()
             for t in threads: t.join()
 
@@ -724,10 +728,10 @@ class TestConcurrentExecution:
                     self._event.set()
 
             def _deposit(self, amount: int):
-                logger.info(f"正在存款 {amount} 到账户，当前余额: {self._balance}")
+                logger.info(f'正在存款 {amount} 到账户，当前余额: {self._balance}')
                 time.sleep(0.01)
                 self._balance += amount
-                logger.info(f"存款完成，新的余额: {self._balance}")
+                logger.info(f'存款完成，新的余额: {self._balance}')
 
         def test_synchronization_objects(self):
             """同步对象"""
@@ -742,7 +746,7 @@ class TestConcurrentExecution:
             threads = [threading.Thread(target=method, args=(100,)) for method in sync_methods]
             for thread in threads: thread.start()
             for thread in threads: thread.join()
-            logger.info("所有存款操作已完成")
+            logger.info('所有存款操作已完成')
 
     class TestMultiprocessing:
         """
@@ -757,8 +761,8 @@ class TestConcurrentExecution:
         @staticmethod
         def producer(queue):
             for i in range(5):
-                queue.put(f"Task {i}")
-                print(f"Produced Task {i}")
+                queue.put(f'Task {i}')
+                print(f'Produced Task {i}')
 
         @staticmethod
         def consumer(queue):
@@ -766,11 +770,11 @@ class TestConcurrentExecution:
                 task = queue.get()
                 if task == 'STOP':
                     break
-                print(f"Consumed {task}")
+                print(f'Consumed {task}')
 
         @staticmethod
         def child(conn):
-            conn.send("Hello from child process")
+            conn.send('Hello from child process')
             print(conn.recv())
             conn.close()
 
@@ -803,7 +807,7 @@ class TestConcurrentExecution:
             p = Process(target=self.child, args=(child_conn,))
             p.start()
             print(parent_conn.recv())
-            parent_conn.send("Hello back")
+            parent_conn.send('Hello back')
             p.join()
             # endregion
 
@@ -921,13 +925,13 @@ class TestNetworkingAndInterprocessCommunication:
 # region 互联网数据处理：https://docs.python.org/zh-cn/3/library/netdata.html
 class TestInternetDataHandling:
     def test_json(self):
-        data = {"name": "张三", "age": 30, "skills": ["Python", "Data Science"]}
+        data = {'name': '张三', 'age': 30, 'skills': ['Python', 'Data Science']}
         # ensure_ascii  对非 ASCII 字符进行转义
         # sort_keys     按键排序
         json_str = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)
         print(json_str)
         assert json.loads(json_str) == data
-        with open("test.json", "w+", encoding="utf-8") as f:
+        with open(Paths.fixture('test.json'), 'w+', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
             f.seek(0)
             assert json.load(f) == data
@@ -1002,8 +1006,8 @@ class TestGenericOperatingSystemServices:
             assert os.linesep == '\r\n'
 
         def test_files_and_directories(self):
-            print(f"当前工作目录：{os.getcwd()}")
-            print(f"目录下文件的名称：{os.listdir()}")
+            print(f'当前工作目录：{os.getcwd()}')
+            print(f'目录下文件的名称：{os.listdir()}')
             # 目录树生成器
             for (dirpath, dirnames, filenames) in os.walk(os.getcwd()):
                 print(dirpath)
@@ -1011,7 +1015,7 @@ class TestGenericOperatingSystemServices:
                 for filename in filenames: print(os.path.join(dirpath, filename))
                 print()
 
-            new_dir = "test_dir"
+            new_dir = 'test_dir'
             if not os.path.exists(new_dir):
                 # 创建目录
                 os.mkdir(new_dir)
@@ -1021,11 +1025,11 @@ class TestGenericOperatingSystemServices:
             os.rmdir(new_dir)
             # 递归创建目录，即使目录已存在
             os.makedirs(new_dir, exist_ok=True)
-            file_path = os.path.join(new_dir, "empty.txt")
+            file_path = os.path.join(new_dir, 'empty.txt')
             # 创建一个文件
-            with open(file_path, "w"):
+            with open(file_path, 'w'):
                 pass
-            new_file_path = os.path.join(new_dir, "new_file.txt")
+            new_file_path = os.path.join(new_dir, 'new_file.txt')
             # 重命名文件
             os.rename(file_path, new_file_path)
             # 删除文件，语义与 os.unlink() 相同
@@ -1040,7 +1044,7 @@ class TestGenericOperatingSystemServices:
             os.system('ping www.baidu.com')
 
             # 使用已关联的应用程序打开文件
-            os.startfile('test.txt')
+            os.startfile(Paths.fixture('test.txt'))
 
     class TestIO:
         """
@@ -1050,36 +1054,36 @@ class TestGenericOperatingSystemServices:
 
             1. TextIOBase：TextIOWrapper、StringIO
             2. 人类可读文本
-            3. `open("test.txt", "r", encoding="utf-8")`
+            3. `open('test.txt', 'r', encoding='utf-8')`
 
         2. 二进制 I/O：缓冲 I/O，接收 字节型对象 并生成 bytes 对象；不执行编码、解码、换行符转换
 
             1. BufferedIOBase：BytesIO、BufferedReader、BufferedWriter、BufferedRandom
             2. 非文本数据（图像/音视频/压缩文件）；网络通信；性能敏感场景（大文件、数据流）；需减少系统调用场景（频繁的小数据读写）
-            3. `open("test.txt", "rb")`
+            3. `open('test.txt', 'rb')`
 
         3. 原始 I/O：非缓冲 I/O，通常用作二进制和文本流的低级构建块
 
             1. RawOIOBase：FileIO
             2. 底层设备交互；需精确控制 I/O 行为（实时系统、设备驱动程序）；零拷贝数据处理（内存映射、数据库页直接访问）；特殊存储需求（自定义文件系统、日志结构存储）；I/O 行为分析（基准测试、性能分析）
-            3. `open("test.txt", "rb", buffering=0)`
+            3. `open('test.txt', 'rb', buffering=0)`
         """
 
         def test_io(self):
-            with open("test.txt", "r", encoding="utf-8") as f:
-                assert f.name == "test.txt"
-                assert f.mode == "r"
-                assert f.readline() == "静夜思\n"
+            with open('fixtures/test.txt', 'r', encoding='utf-8') as f:
+                assert f.name == 'fixtures/test.txt'
+                assert f.mode == 'r'
+                assert f.readline() == '静夜思\n'
 
         def test_bytesio(self):
             """
             BytesIO：使用内存字节缓冲区的二进制流
             """
             from io import BytesIO
-            b = BytesIO(b"abcdef")
+            b = BytesIO(b'abcdef')
             view = b.getbuffer()
-            view[2:4] = b"34"
-            assert view == b"ab34ef"
+            view[2:4] = b'34'
+            assert view == b'ab34ef'
 
     def test_time(self):
         """
@@ -1158,8 +1162,8 @@ class TestPythonRuntimeServices:
         # Python 版本
         assert sys.version_info > (3, 8)
         # 标准输入输出流
-        sys.stdout.write("Hello\n")
-        sys.stderr.write("Error message\n")
+        sys.stdout.write('Hello\n')
+        sys.stderr.write('Error message\n')
         # 已加载模块
         assert sys.modules['sys'] is sys
         # 获取对象内存大小
@@ -1167,7 +1171,7 @@ class TestPythonRuntimeServices:
         # Python 解释器路径
         assert sys.executable == r'D:\Python\Python313\python.exe'
         # 获取系统用于文件系统编码的编码方式
-        assert sys.getfilesystemencoding() == "utf-8"
+        assert sys.getfilesystemencoding() == 'utf-8'
         # 主 Python 解析器是否正在关闭
         assert sys.is_finalizing() is False
         # 引发一个 SystemExit 异常，表示打算退出解释器
@@ -1657,12 +1661,12 @@ class TestClasses:
                 self._age = None
                 self.__id_number = id_number
 
-        p = Person("Mary", "123")
-        assert p.name == "Mary"
+        p = Person('Mary', '123')
+        assert p.name == 'Mary'
         # 可访问单下划线开头属性，不推荐直接访问
         assert p._age is None
         # 私有名称改写，不推荐直接访问
-        assert p._Person__id_number == "123"  # type: ignore[attr-defined]
+        assert p._Person__id_number == '123'  # type: ignore[attr-defined]
 
 
 # endregion

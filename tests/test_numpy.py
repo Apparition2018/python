@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.utils.timer import Timer
+from util import Timer, Paths
 
 
 # region NumPy 模块结构：https://numpy.org/doc/stable/reference/module_structure.html
@@ -133,7 +133,7 @@ class TestArrayObjects:
             assert np.dtype('i4') == 'int32'
             # 7 String with comma-separated fields
             # 生成的 field_name 默认为 f0, f1, f2, ...
-            dt = np.dtype("S20, 2i4, (3,4)f4")
+            dt = np.dtype('S20, 2i4, (3,4)f4')
             assert dt['f0'] == 'S20'
             assert dt['f1'] == ('<i4', (2,))
             assert dt['f2'] == ('<f4', (3, 4))
@@ -144,7 +144,7 @@ class TestArrayObjects:
             # 10 (fixed_dtype, shape)
             assert np.dtype(('i', (2, 2))) == '(2,2)int32'
             # 11 [(field_name, field_dtype, field_shape), ...]
-            dt = np.dtype([("name", "S20"), ("grades", "i4", (2,)), ("marks", "f4", (3, 4))])
+            dt = np.dtype([('name', 'S20'), ('grades', 'i4', (2,)), ('marks', 'f4', (3, 4))])
             # 12 {'names': ..., 'formats': ..., 'offsets': ..., 'titles': ..., 'itemsize': ...}
             dt2 = np.dtype({'names': ['name', 'grades', 'marks'], 'formats': ['S20', ('i4', 2), ('f4', (3, 4))]})
             assert dt == dt2
@@ -189,51 +189,32 @@ class TestArrayObjects:
 
                 def test_from_existing_data(self):
                     original = np.array([1, 2, 3])
-
-                    # array(object[, dtype, copy, order, subok, ndmin, ...])
-                    # 输入已是 ndarray 时，创建新的副本
+                    # array         输入已是 ndarray 时，创建新的副本
                     assert np.array(original) is not original
-
-                    # asarray(a[, dtype, order, device, copy, like])
-                    # 输入已是 ndarray 时，直接返回原对象
+                    # asarray       输入已是 ndarray 时，直接返回原对象
                     assert np.asarray(original) is original
-
-                    # frombuffer(buffer[, dtype, count, offset, like])
-                    # 将 buffer 解释为一维数组
+                    # frombuffer    将 buffer 解释为一维数组
                     assert np.array_equal(np.frombuffer(b'banana', dtype='S1'), [b'b', b'a', b'n', b'a', b'n', b'a'])
-
-                    # fromiter(iter, dtype[, count, like])
-                    # 从 iterable 中创建一维数组
+                    # fromiter      从 iterable 中创建一维数组
                     assert np.array_equal(np.fromiter([1, 2, 3], dtype=int), [1, 2, 3])
 
                 def test_from_shape_or_value(self):
-                    # empty(shape[, dtype, order, device, like])
-                    # 返回一个给定形状和类型的新数组，不初始化条目
+                    # empty         返回一个给定形状和类型的新数组，不初始化条目
                     assert not np.array_equal(np.empty((2, 2)), np.empty((2, 2)))
-
-                    # zeros(shape[, dtype, order, device, like])
-                    # 返回一个给定形状和类型的新数组，填充0
+                    # zeros         返回一个给定形状和类型的新数组，填充0
                     assert np.array_equal(np.zeros((2, 2), dtype=int), [[0, 0], [0, 0]])
-
-                    # ones(shape[, dtype, order, device, like])
-                    # 返回一个给定形状和类型的新数组，填充1
+                    # ones          返回一个给定形状和类型的新数组，填充1
                     assert np.array_equal(np.ones((2, 2), dtype=int), [[1, 1], [1, 1]])
-
-                    # eye(N[, M, k, dtype, order, device, like])
-                    # 返回一个对角线为1，其余位置为0的二维数组
+                    # eye           返回一个对角线为1，其余位置为0的二维数组
                     assert np.array_equal(np.eye(3, dtype=int), [[1, 0, 0], [0, 1, 0], [0, 0, 1]])
 
                 def test_numerical_ranges(self):
-                    # arange([start,] stop[, step,][, dtype, ...])
+                    # arange
                     assert np.array_equal(np.arange(3), [0, 1, 2])
                     assert np.array_equal(np.arange(0, 3, 1), [0, 1, 2])
-
-                    # linspace(start, stop[, num, endpoint, ...])
-                    # 创建等差数列数组
+                    # linspace      创建等差数列数组
                     assert np.array_equal(np.linspace(1, 9, 5, dtype='i4'), [1, 3, 5, 7, 9])
-
-                    # logspace(start, stop[, num, endpoint, base, ...])
-                    # 创建等比数列数组，base 默认为 10
+                    # logspace      创建等比数列数组，base 默认为 10
                     assert np.array_equal(np.logspace(1, 3, 3, dtype='i4'), [10, pow(10, 2), pow(10, 3)])
 
             def test_ndarray_constructor(self):
@@ -577,6 +558,32 @@ class TestRoutinesAndObjectsByTopic:
         `输入和输出 <https://numpy.org/doc/stable/reference/routines.io.html>`_
         """
 
+        def test_numpy_binary_files_npy_npz(self):
+            """NumPy 二进制文件 (npy, npz)"""
+            x = np.array([1, 2, 3])
+            y = np.array([4, 5, 6])
+            npy_path = Paths.fixture('test.npy')
+            npz_path = Paths.fixture('test.npz')
+            # save                  保存一个数组到 .npy
+            np.save(npy_path, x)
+            # load                  从 .npy、.npz 或 pickled 文件中加载数组或 pickled 对象
+            assert np.array_equal(np.load(npy_path), x)
+            # savez                 保存多个数组到 .npz（未压缩）
+            np.savez(npz_path, a=x, b=y)
+            # savez_compressed      保存多个数组到 .npz（压缩）
+            np.savez_compressed(npz_path, a=x, b=y)
+            assert np.array_equal(np.load(npz_path)['a'], x)
+
+        def test_text_files(self):
+            """文本文件"""
+            a = np.array([1., 2., 3.])
+            txt_path = Paths.fixture('test2.txt')
+            # savetxt               保存一个数组到文本文件
+            np.savetxt(txt_path, a, fmt='%d', delimiter=',')
+            # loadtxt               从文本文件加载数据
+            assert np.array_equal(np.loadtxt(txt_path), a)
+
+
         def test_string_formatting(self):
             """字符串格式化"""
             # 浮点数 → 位置计数法的十进制字符串
@@ -685,33 +692,6 @@ class TestRoutinesAndObjectsByTopic:
                 assert -np.inf < e < np.inf
 
     class TestSortingSearchingAndCounting:
-        def test_sorting(self):
-            """
-            +----------------+--------+-------------+------------+----------+
-            | Algorithm Type | Speed  | Worst Case  | Workspace  | Stable   |
-            +================+========+=============+============+==========+
-            | 'quicksort'    | 1      | O(n^2)      | 0          | No       |
-            +----------------+--------+-------------+------------+----------+
-            | 'mergesort'    | 2      | O(n*log(n)) | ~n/2       | Yes      |
-            +----------------+--------+-------------+------------+----------+
-            | 'heapsort'     | 3      | O(n*log(n)) | 0          | No       |
-            +----------------+--------+-------------+------------+----------+
-            """
-            a = np.array([[2, 4],
-                          [3, 1]])
-            dtype = [('name', 'U10'), ('height', float), ('age', int)]
-            values = [('Amy', 1.8, 41), ('Leo', 1.9, 38), ('Mia', 1.7, 38)]
-            b = np.array(values, dtype=dtype)
-            # sort              返回排序后的数组副本
-            assert np.array_equal(np.sort(a), [[2, 4], [1, 3]])
-            assert np.array_equal(np.sort(a, axis=0), [[2, 1],
-                                                       [3, 4]])
-            assert np.array_equal(np.sort(b, order='height')['name'], ['Mia', 'Amy', 'Leo'])
-            # argsort           返回排序后的索引
-            assert np.array_equal(np.sort(a), [0, 1], [1, 0])
-            assert np.array_equal(np.sort(a, axis=0), [0, 1], [1, 0])
-            # lexsort           多键排序，从最后一个键开始
-
         """
         `排序、搜索和计数 <https://numpy.org/doc/stable/reference/routines.sort.html>`_
         """
@@ -740,15 +720,35 @@ class TestRoutinesAndObjectsByTopic:
             # argsort           返回排序后的索引
             assert np.array_equal(np.argsort(a), [[4, 3, 2, 1, 0], [4, 3, 2, 1, 0]])
             assert np.array_equal(np.argsort(a, axis=0), [[1, 1, 1, 1, 1], [0, 0, 0, 0, 0]])
-            # partition         返回数组的分区副本。只保证第k个位置的元素是正确的，不保证其它元素有序
+            # partition         返回数组的分区副本
+            # 只保证第k小的元素在正确的位置，左边元素都比它小，右边元素都比它大，不保证其它元素有序
             assert np.array_equal(np.partition(a, 2), [[5, 6, 7, 8, 9], [0, 1, 2, 3, 4]])
-            # argpartition      返回排序后的索引
+            # argpartition      返回分区后的索引
             assert np.array_equal(np.argpartition(a, 2), [[4, 3, 2, 1, 0], [4, 3, 2, 1, 0]])
-            # lexsort           多键排序，从最后一个键开始
+            # lexsort           多字段排序，从最后一个键开始
+            indices = np.lexsort((b['height'], b['age']))
+            assert np.array_equal(indices, [2, 1, 0])
+            assert np.array_equal(b[indices]['name'], ['Mia', 'Leo', 'Amy'])
 
         def test_searching(self):
-            # nonzero           返回非零元素的索引
-            assert np.array_equal(np.nonzero([True, 0, False, 1])[0], [0, 3])
+            a = np.array([[-2, 0, -3, -1], [True, 0, False, 1]])
+            # argmax            返回最大值的索引
+            assert np.argmax(a) == 4
+            assert np.array_equal(np.argmax(a, axis=0), [1, 0, 1, 1])
+            assert np.array_equal(np.argmax(a, axis=1), [1, 0])
+            # argmin            返回最小值的索引
+            assert np.argmin(a) == 2
+            assert np.array_equal(np.argmin(a, axis=0), [0, 0, 0, 0])
+            assert np.array_equal(np.argmin(a, axis=1), [2, 1])
+            # nonzero           返回非零元素的索引。有3个0，所以返回5个元素的坐标
+            assert np.array_equal(np.nonzero(a), [[0, 0, 0, 1, 1], [0, 2, 3, 0, 3]])
+            # where             返回满足条件的元素的索引
+            i = np.where(a > 0)
+            # (1, 0)、(1, 3) 满足条件
+            assert np.array_equal(i, [[1, 1], [0, 3]])
+            assert np.array_equal(a[i], [1, 1])
+            # extract           返回满足条件的元素
+            assert np.array_equal(a[i], np.extract(a > 0, a))
 
     class TestStatistics:
         """
@@ -946,4 +946,21 @@ class TestNumpyFundamentals:
         # 显式复制
         c = np.tile(b, (2, 1))
         assert np.array_equal(a + b, a + c)
-# endregion
+
+    def test_copies_and_views(self):
+        """
+        `副本和视图 <https://numpy.org/doc/stable/user/basics.copies.html>`_
+        """
+        a = np.array([1, 2, 3])
+        # 副本：通过复制 databufer 和 data buffer 来创建一个新数组
+        c = a.copy()
+        c[0] = 0
+        assert np.array_equal(a, [1, 2, 3])
+        assert c.base == None
+        # 视图：只更改某些 metadata（如 stride 和 dtype）而不更改 data buffer
+        v = a.view()
+        v[0] = 0
+        assert np.array_equal(a, [0, 2, 3])
+        assert np.array_equal(v.base, a)
+
+    # endregion
