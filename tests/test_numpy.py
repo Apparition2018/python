@@ -712,6 +712,39 @@ class TestRoutinesAndObjectsByTopic:
             assert np.array_equal(np.sort(a, axis=0), [0, 1], [1, 0])
             # lexsort           多键排序，从最后一个键开始
 
+        """
+        `排序、搜索和计数 <https://numpy.org/doc/stable/reference/routines.sort.html>`_
+        """
+
+        def test_sorting(self):
+            """
+            +----------------+--------+-------------+------------+----------+
+            | Algorithm Type | Speed  | Worst Case  | Workspace  | Stable   |
+            +================+========+=============+============+==========+
+            | 'quicksort'    | 1      | O(n^2)      | 0          | No       |
+            +----------------+--------+-------------+------------+----------+
+            | 'mergesort'    | 2      | O(n*log(n)) | ~n/2       | Yes      |
+            +----------------+--------+-------------+------------+----------+
+            | 'heapsort'     | 3      | O(n*log(n)) | 0          | No       |
+            +----------------+--------+-------------+------------+----------+
+            """
+            a = np.array([[9, 8, 7, 6, 5], [4, 3, 2, 1, 0]])
+            dtype = [('name', 'U10'), ('height', float), ('age', int)]
+            values = [('Amy', 1.8, 41), ('Leo', 1.9, 38), ('Mia', 1.7, 38)]
+            b = np.array(values, dtype=dtype)
+            # sort              返回排序后的数组副本
+            assert np.array_equal(np.sort(a), np.sort(a, axis=1))
+            assert np.array_equal(np.sort(a), [[5, 6, 7, 8, 9], [0, 1, 2, 3, 4]])
+            assert np.array_equal(np.sort(a, axis=0), [[4, 3, 2, 1, 0], [9, 8, 7, 6, 5]])
+            assert np.array_equal(np.sort(b, order='height')['name'], ['Mia', 'Amy', 'Leo'])
+            # argsort           返回排序后的索引
+            assert np.array_equal(np.argsort(a), [[4, 3, 2, 1, 0], [4, 3, 2, 1, 0]])
+            assert np.array_equal(np.argsort(a, axis=0), [[1, 1, 1, 1, 1], [0, 0, 0, 0, 0]])
+            # partition         返回数组的分区副本。只保证第k个位置的元素是正确的，不保证其它元素有序
+            assert np.array_equal(np.partition(a, 2), [[5, 6, 7, 8, 9], [0, 1, 2, 3, 4]])
+            # argpartition      返回排序后的索引
+            assert np.array_equal(np.argpartition(a, 2), [[4, 3, 2, 1, 0], [4, 3, 2, 1, 0]])
+            # lexsort           多键排序，从最后一个键开始
 
         def test_searching(self):
             # nonzero           返回非零元素的索引
