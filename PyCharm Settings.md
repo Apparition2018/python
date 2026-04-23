@@ -1,5 +1,4 @@
 # PyCharm Settings
-- j: JetBrains
 - n: New Project
 - o: Optional
 ---
@@ -19,7 +18,7 @@
     4 右键刚刚 Add 的 Interpreter → Rename
 ---
 ## Tools
-### Terminal (-jo)
+### Terminal
     1 Settings → Tools → Terminal
     2 Shell path: cmd.exe "/K" "D:\miniconda3\Scripts\activate.bat"
     3 Default tab name: miniconda3
@@ -46,12 +45,20 @@
 ## [anaconda](https://www.anaconda.com/docs/getting-started/getting-started)
 ### [Conda Commands](https://docs.conda.io/projects/conda/en/stable/commands/index.html)
 ### [Configuration](https://docs.conda.io/projects/conda/en/latest/user-guide/configuration/index.html)
+    # 将 conda-forge 通道前置为最高优先级
     conda config --prepend channels conda-forge
+    # 将通道优先级设为严格（所有包来源统一，稳定性大增，避免依赖冲突）
     conda config --set channel_priority strict
     conda config --append create_default_packages pytest-asyncio
     conda config --append create_default_packages requests
     conda config --append create_default_packages pandas
     conda config --append create_default_packages pandas-stubs
+### create env & install package
+    conda create -n py314 python
+    conda activate py314
+    conda install -y loguru gevent
+    conda install -y fake-useragent selenium tenacity jsonpath-ng lxml moviepy pymysql openpyxl python-docx python-pptx
+    pip install pdfplumber pypdf
 ### [Tasks](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/index.html)
 #### conda
     # 显示当前 conda 安装信息
@@ -95,8 +102,8 @@
     conda env export > environment.yml
     conda export -n <env> -f=environment.yml
     conda export -n <env> --format=yml
-    # 将环境导出为 YAML，只记录显式 conda install 的包，排除平台指定依赖
-    conda export --from-history > environment.yml
+    # 将环境导出为 YAML，只记录显式 conda install 的包（不记录 pip install），排除平台指定依赖
+    conda export --from-history > environment-his.yml
 
     # 列出修订历史
     conda list --revisions
@@ -115,11 +122,11 @@
     # 查看指定包在指定通道是否可供安装
     conda search -c <channel> <package>
     # 安装包
-    #   ① conda install -n <env> -c <channel> <package>=<version>
+    #   ① conda install -n <env> -c <channel> -y <package>=<version>
     #   ② http://anaconda.org
     #   ③ pip install <package>
     # 列出指定环境已安装的包
-    conda list -n <env> <package>1
+    conda list -n <env> <package>
     # 更新指定环境的指定包到最新的兼容版本
     conda update -n <env> <package>
     # 更新所有包

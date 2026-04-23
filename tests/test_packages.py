@@ -266,7 +266,8 @@ def test_moviepy():
     `moviepy <https://pypi.org/project/moviepy/>`_：用于视频编辑：剪切、连接、插入标题、视频合成（也称为非线性编辑）、视频处理和创建自定义效果
     """
     import tempfile
-    from moviepy import AudioFileClip, VideoFileClip
+    from moviepy.audio.io.AudioFileClip import AudioFileClip
+    from moviepy.video.io.VideoFileClip import VideoFileClip
     ua = UserAgent()
 
     def get_windows_ua():
@@ -302,7 +303,7 @@ def test_moviepy():
 
 def test_pymysql():
     """
-    `PyMySQL <https://pypi.org/project/PyMySQL/>`_
+    `pymysql <https://pypi.org/project/PyMySQL/>`_
     """
     import pymysql
     from pymysql import cursors

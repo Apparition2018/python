@@ -1,0 +1,23 @@
+name: py314
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pandas
+  - requests
+  - pandas-stubs
+  - python
+  - pytest-asyncio
+  - loguru
+  - gevent
+  - python-docx
+  - moviepy
+  - lxml
+  - fake-useragent
+  - python-pptx
+  - selenium
+  - pymysql
+  - tenacity
+  - openpyxl
+  - jsonpath-ng
+prefix: D:\miniconda3\envs\py314
