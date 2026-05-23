@@ -3,21 +3,23 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - pandas
-  - requests
-  - pandas-stubs
   - python
+  - pandas
   - pytest-asyncio
+  - pandas-stubs
+  - requests
   - loguru
   - gevent
-  - python-docx
-  - moviepy
-  - lxml
+  - pdfplumber
   - fake-useragent
-  - python-pptx
+  - jsonpath-ng
+  - pypdf
   - selenium
-  - pymysql
   - tenacity
   - openpyxl
-  - jsonpath-ng
+  - lxml
+  - pymysql
+  - python-pptx
+  - python-docx
+  - moviepy
 prefix: D:\miniconda3\envs\py314

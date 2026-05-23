@@ -2,8 +2,6 @@ import time
 from pathlib import Path
 from typing import Callable, Any
 
-from _pytest import fixtures
-
 
 class Timer:
     @staticmethod

@@ -220,7 +220,8 @@ class TestTenacity:
             print(f'🔴 [after]  总耗时{retry_state.seconds_since_start}秒\n')
 
         do_something = retry(
-            before=log_before, after=log_after, before_sleep=before_sleep_log(logging.getLogger(), logging.INFO) # type: ignore
+            before=log_before, after=log_after, before_sleep=before_sleep_log(logging.getLogger(), logging.INFO)
+            # type: ignore
         )(self.do_something)
         do_something()
 
@@ -539,9 +540,9 @@ def test_pdfplumber():
     `pdfplumber <https://pypi.org/project/pdfplumber/>`_：获取 PDF 每个 char、rectangle、line 的信息
     """
     import pdfplumber
-    with pdfplumber.open(Paths.fixture('test.pdf')) as pdf:
+    with pdfplumber.open(Paths.fixture('test.pdf'), password='123456') as pdf:
         for page in pdf.pages:
-            print(page.extract_text)
+            print(page.extract_text())
             for table in page.extract_tables():
                 print(table)
 
@@ -638,3 +639,17 @@ class TestPPTX:
         chart.plots[0].data_labels.number_format = '#,#'
         chart.plots[0].data_labels.position = XL_DATA_LABEL_POSITION.INSIDE_END
         p.save(self.PPTX_PATH)
+
+
+def test_pysrt():
+    """
+    `pysrt <https://pypi.org/project/pysrt/>`_：
+
+    ffmpeg -i video.mp4 -i subtitle.srt -c copy -c:s mov_text output.mp4
+    """
+    import pysrt
+    from pathlib import Path
+    subs = pysrt.open(Path.home() / 'Desktop/SSIS-026-2.srt', encoding='utf-8')
+    # 提前x秒
+    subs.shift(seconds=-0.4)
+    subs.save(Path.home() / 'Desktop/SSIS-026.srt', encoding='utf-8')

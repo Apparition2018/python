@@ -952,7 +952,7 @@ class TestNumpyFundamentals:
         `副本和视图 <https://numpy.org/doc/stable/user/basics.copies.html>`_
         """
         a = np.array([1, 2, 3])
-        # 副本：通过复制 databufer 和 data buffer 来创建一个新数组
+        # 副本：通过复制 data buffer 和 metadata 来创建一个新数组
         c = a.copy()
         c[0] = 0
         assert np.array_equal(a, [1, 2, 3])

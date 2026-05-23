@@ -229,7 +229,7 @@ class TestBuiltinTypes:
     """
     1. 不可变类型：修改操作实际创建新对象，内存地址改变，可用作字典键
 
-        1. 数值：int, flot, complex, bool
+        1. 数值：int, float, complex, bool
         2. 文本序列：str
         3. 序列：tuple，range
         4. 二进制序列：bytes
@@ -499,6 +499,8 @@ class TestFileAndDirectoryAccess:
         for _ in p.iterdir(): pass
         # / 操作符可以创建子路径，如 os.path.join()
         assert p / 'test.txt' == Path('./test.txt')
+        # 返回指向扩展用户('~')的新路径
+        assert str(Path.home()) == 'C:\\Users\\Administrator'
 
     def test_os_path(self):
         """
@@ -1505,7 +1507,7 @@ class TestControlFlowTools:
 
             assert fn(**{'a': 1, 'c': 3}, **{'b': 2, 'd': 4}) == (1, 2, 3, 4)
 
-        def test_lamda_expressions(self):
+        def test_lambda_expressions(self):
             """
             `Lambda 表达式 <https://docs.python.org/zh-cn/3/tutorial/controlflow.html#lambda-expressions>`_
             """
