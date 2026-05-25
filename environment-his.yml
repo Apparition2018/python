@@ -22,4 +22,5 @@ dependencies:
   - python-pptx
   - python-docx
   - moviepy
+  - flask
 prefix: D:\miniconda3\envs\py314

@@ -1040,10 +1040,14 @@ class TestGenericOperatingSystemServices:
             os.removedirs(new_dir)
 
         def test_process_management(self):
+            import subprocess
             # 在子 shell 中执行操作系统命令
-            os.system('cmd')
-            os.system('regedit')
-            os.system('ping www.baidu.com')
+            subprocess.Popen('cmd', shell=True)
+            subprocess.Popen('regedit', shell=True)
+            try:
+                subprocess.run('ping www.baidu.com', shell=True, timeout=10)
+            except subprocess.TimeoutExpired:
+                pass
 
             # 使用已关联的应用程序打开文件
             os.startfile(Paths.fixture('test.txt'))

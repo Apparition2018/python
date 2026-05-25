@@ -55,7 +55,7 @@ class TestRequests:
                 timeout=2,
                 allow_redirects=True
             )
-            print(re.search(r'<title[^>]*>.*?(\d+(?:\.\d+)*)', r.text).group(1).strip())
+            print(re.search(r'<title[^>]*>.*?(\d+(?:\.\d+)*)', r.text).group(1).strip())  # type: ignore[union-attr]
 
 
 def test_user_agent():
@@ -220,8 +220,8 @@ class TestTenacity:
             print(f'🔴 [after]  总耗时{retry_state.seconds_since_start}秒\n')
 
         do_something = retry(
-            before=log_before, after=log_after, before_sleep=before_sleep_log(logging.getLogger(), logging.INFO)
-            # type: ignore
+            before=log_before, after=log_after,
+            before_sleep=before_sleep_log(logging.getLogger(), logging.INFO)  # type: ignore[arg-type]
         )(self.do_something)
         do_something()
 
@@ -240,11 +240,19 @@ class TestTenacity:
 def test_jsonpath_ng():
     """
     `jsonpath-ng <https://pypi.org/project/jsonpath-ng/>`_
+
+    1. $        根对象或元素
+    2. . / []   子运算符
+    3. ..       递归下降
+    4. *        通配符
     """
     from jsonpath_ng import parse
-    r = requests.get('https://reqres.in/api/users', headers={'x-api-key': 'reqres-free-v1'})
+    r = requests.get('https://reqres.in/api/users', headers={'x-api-key': 'free_user_3ECbsudZzyLSxhSTtidjGZi3BPv'})
+    print(json.dumps(r.json(), indent=2, ensure_ascii=False))
     titles = [match.value for match in parse('$.data[*].first_name').find(r.json())]
     print(titles[:5])
+    # 查找 data 最后一个元素
+    print(parse('$.data[-1]').find(r.json())[0].value)
 
 
 def test_lxml():
@@ -278,8 +286,8 @@ def test_moviepy():
     url = 'https://www.bilibili.com/video/BV1D4411L7Qd/'
     headers = {'User-Agent': get_windows_ua(), 'Referer': url}
     r = requests.get(url, headers=headers)
-    audio_url = re.search(r'"id":30216,"baseUrl":"(.*?)","base_url"', r.text).group(1)
-    video_url = re.search(r'"id":16,"baseUrl":"(.*?)","base_url"', r.text).group(1)
+    audio_url = re.search(r'"id":30216,"baseUrl":"(.*?)","base_url"', r.text).group(1)  # type: ignore[union-attr]
+    video_url = re.search(r'"id":16,"baseUrl":"(.*?)","base_url"', r.text).group(1)  # type: ignore[union-attr]
     audio_data = requests.get(audio_url, headers=headers).content
     video_data = requests.get(video_url, headers=headers).content
     with (tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_audio,
@@ -298,8 +306,8 @@ def test_moviepy():
                 ffmpeg_params=['-movflags', '+faststart']
             )
     finally:
-        os.remove(temp_audio_path) if os.path.exists(temp_audio_path) else None
-        os.remove(temp_video_path) if os.path.exists(temp_video_path) else None
+        if os.path.exists(temp_audio_path): os.remove(temp_audio_path)
+        if os.path.exists(temp_video_path): os.remove(temp_video_path)
 
 
 def test_pymysql():
@@ -344,6 +352,7 @@ class TestOpenpyxl:
         # 工作表
         assert workbook.active == workbook[workbook.sheetnames[0]]
         worksheet = workbook.active
+        assert worksheet is not None
         # (行数，列数)
         assert (worksheet.max_row, worksheet.max_column) == (9, 3)
         # 工作表切片
@@ -419,7 +428,7 @@ class TestPythonDocx:
         # 遍历段落
         for paragraph in doc.paragraphs:
             # 所有标题
-            if re.match(r'^Heading \d+$', paragraph.style.name): pass
+            if re.match(r'^Heading \d+$', paragraph.style.name): pass  # type: ignore[union-attr]
         # 遍历样式
         for style in doc.styles:
             if style.type == WD_STYLE_TYPE.PARAGRAPH:
@@ -438,8 +447,8 @@ class TestPythonDocx:
         doc = type(self).Document(self.DOCX_PATH)
         section = doc.sections[0]
         # 页面宽高
-        assert round(section.page_width.cm, 1) == 21.0
-        assert round(section.page_height.cm, 1) == 29.7
+        assert round(section.page_width.cm, 1) == 21.0 # type: ignore[union-attr]
+        assert round(section.page_height.cm, 1) == 29.7 # type: ignore[union-attr]
         # 页面方向
         assert section.orientation == WD_ORIENTATION.PORTRAIT
         body = doc.element.body
@@ -520,7 +529,7 @@ def test_pandas():
                                   # 指定日期格式
                                   # date_format='%Y-%m-%d'
                                   )
-    print(dataframe.info())
+    dataframe.info()
     # 删除重复数据
     dataframe.drop_duplicates()
     # 遍历数据
@@ -533,6 +542,19 @@ def test_pandas():
         dataframe.to_csv(f'{tmpdir}/test.csv', encoding='utf-8')
         # 写入 Excel 工作表
         dataframe.to_excel(f'{tmpdir}/test2.xlsx')
+
+
+def test_pandas2():
+    r = requests.get('https://dmfw.mca.gov.cn/9095/xzqh/getList?maxLevel=3')
+    r_json = r.json()
+    # print(json.dumps(r_json['data']['children'], indent=2, ensure_ascii=False))
+    r_json['data']['children'][-1]['children'] = []
+    df = pandas.json_normalize(r_json['data']['children'],
+                               record_path=['children', 'children'],
+                               meta=['name', ['children', 'name']],
+                               meta_prefix='pre_')
+    district_list = df.reindex(columns=['pre_name', 'pre_children.name', 'name', 'code']).values.tolist()
+    print(district_list)
 
 
 def test_pdfplumber():

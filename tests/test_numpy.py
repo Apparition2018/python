@@ -303,7 +303,7 @@ class TestArrayObjects:
                 """
                 with np.nditer(self.a, op_flags=['readwrite']) as it:
                     for x in it:
-                        x[...] = 2 * x
+                        x[...] = 2 * x  # type: ignore[index]
                 assert np.array_equal(self.a, [[0, 2, 4], [6, 8, 10]])
 
             def test_external_loop_and_buffering(self):
@@ -367,7 +367,7 @@ class TestArrayObjects:
                 # op_axes：显示地控制维度对齐
                 # [0, -1, -1] 表示 [a的第0维, 新轴, 新轴], 即 a 形状 (2,) → (2, 1, 1)
                 # [-1, 0, 1] 表示 [新轴, b的第0维, b的第1维], 即 b 形状 (2, 2) → (1, 2, 2)
-                it = np.nditer([a, b, None], op_axes=[[0, -1, -1], [-1, 0, 1], None])
+                it = np.nditer([a, b, None], op_axes=[[0, -1, -1], [-1, 0, 1], None])  # type: ignore[arg-type]
                 with it:
                     for x, y, z in it:
                         z[...] = x * y
@@ -583,7 +583,6 @@ class TestRoutinesAndObjectsByTopic:
             # loadtxt               从文本文件加载数据
             assert np.array_equal(np.loadtxt(txt_path), a)
 
-
         def test_string_formatting(self):
             """字符串格式化"""
             # 浮点数 → 位置计数法的十进制字符串
@@ -677,18 +676,18 @@ class TestRoutinesAndObjectsByTopic:
             `遗留生成器 <https://numpy.org/doc/stable/reference/random/legacy.html>`_
             """
             # rand              根据给定形状生成随机浮点数数组，元素范围[0, 1)
-            for d3 in np.random.rand(3, 2, 1):
+            for d3 in np.random.rand(3, 2, 1):  # type: ignore[type-var]
                 for d2 in d3:
                     for e in d2:
                         assert 0 <= e < 1
             # randint           生成随机整数数组，元素范围[low, high)
-            for e in np.random.randint(0, 10, 5):
+            for e in np.random.randint(0, 10, 5):  # type: ignore[type-var]
                 assert 0 <= e < 10
             # randn             根据给定形状生成符合标准正态分布的随机浮点数数组，元素范围(-∞, +∞)
-            for e in np.random.randn(10):
+            for e in np.random.randn(10):  # type: ignore[type-var]
                 assert -np.inf < e < np.inf
             # normal            根据给定形状生成任意正态分布的随机浮点数数组，元素范围(-∞, +∞)
-            for e in np.random.normal(0, 1, 10):
+            for e in np.random.normal(0, 1, 10):  # type: ignore[type-var]
                 assert -np.inf < e < np.inf
 
     class TestSortingSearchingAndCounting:
@@ -956,7 +955,7 @@ class TestNumpyFundamentals:
         c = a.copy()
         c[0] = 0
         assert np.array_equal(a, [1, 2, 3])
-        assert c.base == None
+        assert c.base is None
         # 视图：只更改某些 metadata（如 stride 和 dtype）而不更改 data buffer
         v = a.view()
         v[0] = 0

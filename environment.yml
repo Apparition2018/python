@@ -7,12 +7,14 @@ dependencies:
   - attrs=26.1.0=pyhcf101f3_0
   - backports.asyncio.runner=1.2.0=pyh5ded981_2
   - backports.zstd=1.5.0=py314h680f03e_0
+  - blinker=1.9.0=pyhff2d567_0
   - brotli-python=1.2.0=py314he701e3d_1
   - bzip2=1.0.8=h0ad9c76_9
   - ca-certificates=2026.5.20=h4c7d964_0
   - certifi=2026.5.20=pyhd8ed1ab_0
   - cffi=2.0.0=py314h5a2d7ad_1
   - charset-normalizer=3.4.7=pyhd8ed1ab_0
+  - click=8.4.0=pyh6dadd2b_0
   - colorama=0.4.6=pyhd8ed1ab_1
   - cryptography=48.0.0=py314he884d78_0
   - decorator=5.3.1=pyhd8ed1ab_0
@@ -20,6 +22,7 @@ dependencies:
   - exceptiongroup=1.3.1=pyhd8ed1ab_0
   - fake-useragent=2.2.0=py314h86ab7b2_1
   - ffmpeg=4.3.1=ha925a31_0
+  - flask=3.1.3=pyhcf101f3_1
   - gevent=26.5.0=py314hc5dbbe4_0
   - greenlet=3.5.1=py314hb98de8c_0
   - h11=0.16.0=pyhcf101f3_1
@@ -30,6 +33,8 @@ dependencies:
   - imageio=2.37.0=pyhfb79c49_0
   - imageio-ffmpeg=0.6.0=pyhd8ed1ab_0
   - iniconfig=2.3.0=pyhd8ed1ab_0
+  - itsdangerous=2.2.0=pyhd8ed1ab_1
+  - jinja2=3.1.6=pyhcf101f3_1
   - jsonpath-ng=1.8.0=pyhcf101f3_0
   - lcms2=2.19.1=hf2c6c5f_0
   - lerc=4.1.0=hd936e49_0
@@ -61,6 +66,7 @@ dependencies:
   - llvm-openmp=22.1.6=h4fa8253_0
   - loguru=0.7.3=pyh7428d3b_0
   - lxml=6.1.1=py314hcdb55d9_0
+  - markupsafe=3.0.3=py314h2359020_1
   - mkl=2026.0.0=hac47afa_908
   - moviepy=1.0.3=pyhd8ed1ab_1
   - numpy=2.4.6=py314h02f10f6_0
@@ -119,6 +125,7 @@ dependencies:
   - vcomp14=14.51.36231=h1b9f54f_37
   - vs2015_runtime=14.51.36231=h84cd919_37
   - websocket-client=1.9.0=pyhd8ed1ab_0
+  - werkzeug=3.1.8=pyhcf101f3_0
   - win32_setctime=1.2.0=pyhd8ed1ab_0
   - win_inet_pton=1.1.0=pyh7428d3b_8
   - wsproto=1.3.2=pyhd8ed1ab_0
