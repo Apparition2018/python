@@ -12,6 +12,7 @@ import time
 
 import pandas
 import requests
+from cozepy import TokenAuth, COZE_CN_BASE_URL
 from fake_useragent import UserAgent
 from tenacity import retry, stop_after_attempt
 
@@ -675,3 +676,16 @@ def test_pysrt():
     # 提前x秒
     subs.shift(seconds=-0.4)
     subs.save(Path.home() / 'Desktop/SSIS-026.srt', encoding='utf-8')
+
+
+class TestCozepy:
+    def test_space_list(self):
+        """
+        `cozepy <https://pypi.org/project/cozepy/>`_：
+        """
+        from cozepy import Coze
+        api_token = 'pat_whdBDYsJ5yf1LRJBAMaYhXHOmTSNA8p8weBMLSoF9pER6D5YYO9tERZzigW1gd0r'
+        coze = Coze(auth=TokenAuth(token=api_token), base_url=COZE_CN_BASE_URL)
+        # https://www.coze.cn/open/docs/developer_guides/list_workspace
+        workspaces = coze.workspaces.list()
+        print(workspaces.items)

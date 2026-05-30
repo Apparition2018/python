@@ -137,6 +137,18 @@ dependencies:
   - zope.interface=8.0.1=py314hc5dbbe4_1
   - zstd=1.5.7=h534d264_6
   - pip:
+      - annotated-types==0.7.0
+      - anyio==4.13.0
+      - authlib==1.7.2
       - chardet==7.4.3
+      - cozepy==0.20.0
+      - distro==1.9.0
+      - httpcore==1.0.9
+      - httpx==0.28.1
+      - joserfc==1.6.8
+      - pydantic==2.13.4
+      - pydantic-core==2.46.4
       - pysrt==1.1.2
+      - typing-inspection==0.4.2
+      - websockets==14.2
 prefix: D:\miniconda3\envs\py314
