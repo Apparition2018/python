@@ -3,24 +3,25 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python
-  - pandas
   - pytest-asyncio
+  - python
   - pandas-stubs
+  - pandas
   - requests
-  - loguru
   - gevent
+  - loguru
+  - openpyxl
+  - python-docx
+  - pymysql
+  - tenacity
+  - moviepy
+  - jsonpath-ng
+  - selenium
+  - pypdf
   - pdfplumber
   - fake-useragent
-  - jsonpath-ng
-  - pypdf
-  - selenium
-  - tenacity
-  - openpyxl
-  - lxml
-  - pymysql
   - python-pptx
-  - python-docx
-  - moviepy
+  - lxml
   - flask
+  - flask-cors
 prefix: D:\miniconda3\envs\py314

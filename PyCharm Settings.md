@@ -58,7 +58,8 @@
     conda activate py314
     conda install -y loguru gevent
     conda install -y fake-useragent selenium tenacity jsonpath-ng lxml moviepy pymysql openpyxl python-docx pdfplumber pypdf python-pptx
-    pip install -y pysrt cozepy
+    conda install -y flask flask-cors
+    pip install pysrt cozepy
 ### [Tasks](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/index.html)
 #### conda
     # 显示当前 conda 安装信息

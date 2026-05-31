@@ -12,7 +12,6 @@ import time
 
 import pandas
 import requests
-from cozepy import TokenAuth, COZE_CN_BASE_URL
 from fake_useragent import UserAgent
 from tenacity import retry, stop_after_attempt
 
@@ -448,8 +447,8 @@ class TestPythonDocx:
         doc = type(self).Document(self.DOCX_PATH)
         section = doc.sections[0]
         # 页面宽高
-        assert round(section.page_width.cm, 1) == 21.0 # type: ignore[union-attr]
-        assert round(section.page_height.cm, 1) == 29.7 # type: ignore[union-attr]
+        assert round(section.page_width.cm, 1) == 21.0  # type: ignore[union-attr]
+        assert round(section.page_height.cm, 1) == 29.7  # type: ignore[union-attr]
         # 页面方向
         assert section.orientation == WD_ORIENTATION.PORTRAIT
         body = doc.element.body
@@ -683,7 +682,7 @@ class TestCozepy:
         """
         `cozepy <https://pypi.org/project/cozepy/>`_：
         """
-        from cozepy import Coze
+        from cozepy import Coze, TokenAuth, COZE_CN_BASE_URL
         api_token = 'pat_whdBDYsJ5yf1LRJBAMaYhXHOmTSNA8p8weBMLSoF9pER6D5YYO9tERZzigW1gd0r'
         coze = Coze(auth=TokenAuth(token=api_token), base_url=COZE_CN_BASE_URL)
         # https://www.coze.cn/open/docs/developer_guides/list_workspace
